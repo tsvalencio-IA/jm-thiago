@@ -4,7 +4,7 @@
   const { $, esc, parseMoney, toast, statusClass, routeKm, mapsRouteUrl, statusKey, statusLabel, isFinalStatus, setupCollapsiblePanels, pointFrom } = window.JM.utils;
   const { auth, db, arrayUnion, getRealtimeDb, rtdbKey } = window.JM.firebase;
   const cfg = window.JM_CONFIG || {};
-  const DRIVER_FLOW_VERSION = "jm-v28-2-motorista-checklist-assinatura";
+  const DRIVER_FLOW_VERSION = "jm-v28-3-desenho-checklist-tecnico";
   const state = { user: null, profile: null, calls: {}, vehicles: {}, expenses: {}, settings: {}, selectedCallId: "", driverLivePoint: null };
   const unsubscribers = [];
   let driverLocationWatchId = null;
@@ -738,69 +738,141 @@
 
   function damageVehicleSvg(type) {
     if (String(type || "") === "moto") {
-      return `<svg viewBox="0 0 640 300" role="img" aria-label="Desenho 3D de moto para checklist de avarias">
+      return `<svg viewBox="0 0 920 520" role="img" aria-label="Prancha técnica de moto para checklist de avarias">
         <defs>
-          <linearGradient id="motoBody" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#38bdf8"/><stop offset="48%" stop-color="#0f766e"/><stop offset="100%" stop-color="#0f172a"/></linearGradient>
-          <radialGradient id="motoWheel" cx="50%" cy="50%" r="55%"><stop offset="0%" stop-color="#94a3b8"/><stop offset="42%" stop-color="#1f2937"/><stop offset="100%" stop-color="#030712"/></radialGradient>
-          <filter id="motoShadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="14" stdDeviation="10" flood-color="#000" flood-opacity=".42"/></filter>
+          <linearGradient id="motoPanel" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#e5e7eb"/></linearGradient>
+          <linearGradient id="motoBlue" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#dbeafe"/><stop offset="50%" stop-color="#38bdf8"/><stop offset="100%" stop-color="#0f766e"/></linearGradient>
+          <radialGradient id="motoTire" cx="50%" cy="50%" r="55%"><stop offset="0%" stop-color="#f8fafc"/><stop offset="42%" stop-color="#475569"/><stop offset="100%" stop-color="#020617"/></radialGradient>
+          <filter id="motoPaperShadow" x="-5%" y="-5%" width="110%" height="120%"><feDropShadow dx="0" dy="10" stdDeviation="8" flood-color="#000" flood-opacity=".18"/></filter>
         </defs>
-        <ellipse cx="326" cy="248" rx="245" ry="24" fill="#000" opacity=".28"/>
-        <g filter="url(#motoShadow)">
-          <circle cx="145" cy="212" r="54" fill="url(#motoWheel)" stroke="#dbeafe" stroke-width="9"/><circle cx="145" cy="212" r="22" fill="#0f172a" stroke="#38bdf8" stroke-width="5"/>
-          <circle cx="492" cy="212" r="54" fill="url(#motoWheel)" stroke="#dbeafe" stroke-width="9"/><circle cx="492" cy="212" r="22" fill="#0f172a" stroke="#38bdf8" stroke-width="5"/>
-          <path d="M175 200h99l78-80h96l57 80" fill="none" stroke="#e2e8f0" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M276 193l-48-84h82l32 72m96-62l72-58" fill="none" stroke="#bae6fd" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M306 112c40-30 111-28 149 3l-39 44H278z" fill="url(#motoBody)" stroke="#e0f2fe" stroke-width="8" stroke-linejoin="round"/>
-          <path d="M400 87h60l26 23h-80z" fill="#0f172a" stroke="#bae6fd" stroke-width="6"/>
-          <path d="M500 61h48" stroke="#e2e8f0" stroke-width="10" stroke-linecap="round"/>
+        <rect x="18" y="18" width="884" height="484" rx="18" fill="url(#motoPanel)" stroke="#cbd5e1" stroke-width="4" filter="url(#motoPaperShadow)"/>
+        <g font-family="Arial, sans-serif" font-weight="700" fill="#334155" font-size="18">
+          <text x="44" y="54">CHECKLIST DE AVARIAS - MOTO</text>
+          <text x="72" y="250" font-size="13">VISTA LATERAL</text>
+          <text x="574" y="250" font-size="13">VISTA SUPERIOR</text>
         </g>
+        <g transform="translate(58 96)">
+          <ellipse cx="225" cy="267" rx="205" ry="17" fill="#0f172a" opacity=".12"/>
+          <circle cx="100" cy="230" r="55" fill="url(#motoTire)" stroke="#111827" stroke-width="7"/><circle cx="100" cy="230" r="21" fill="#e2e8f0" stroke="#111827" stroke-width="4"/>
+          <circle cx="350" cy="230" r="55" fill="url(#motoTire)" stroke="#111827" stroke-width="7"/><circle cx="350" cy="230" r="21" fill="#e2e8f0" stroke="#111827" stroke-width="4"/>
+          <path d="M130 218h72l70-78h76l44 78" fill="none" stroke="#334155" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M224 202l-35-66h65l22 60m72-60l56-48" fill="none" stroke="#64748b" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M250 132c36-24 91-24 124 0l-31 38H222z" fill="url(#motoBlue)" stroke="#0f172a" stroke-width="5" stroke-linejoin="round"/>
+          <path d="M320 100h56l22 22h-76z" fill="#e2e8f0" stroke="#0f172a" stroke-width="4"/>
+          <path d="M396 88h48" stroke="#0f172a" stroke-width="8" stroke-linecap="round"/>
+        </g>
+        <g transform="translate(544 108)">
+          <path d="M82 214c-30-62-16-147 46-185 77 18 129 18 204 0 60 38 75 123 44 185-99 20-196 20-294 0z" fill="#f8fafc" stroke="#111827" stroke-width="6"/>
+          <path d="M149 74h160l31 73-31 72H149l-31-72z" fill="url(#motoBlue)" opacity=".78" stroke="#475569" stroke-width="5"/>
+          <path d="M185 47h88m-112 205h136" stroke="#111827" stroke-width="8" stroke-linecap="round"/>
+          <circle cx="111" cy="130" r="18" fill="url(#motoTire)" stroke="#111827" stroke-width="5"/><circle cx="347" cy="130" r="18" fill="url(#motoTire)" stroke="#111827" stroke-width="5"/>
+        </g>
+        <g stroke="#64748b" stroke-width="3" fill="none" opacity=".82">
+          <path d="M150 152H72"/><path d="M400 152h84"/><path d="M282 96V70"/><path d="M675 132h-72"/><path d="M813 132h50"/><path d="M723 318v54"/>
+        </g>
+        <g fill="#fff" stroke="#64748b" stroke-width="3"><circle cx="72" cy="152" r="9"/><circle cx="484" cy="152" r="9"/><circle cx="282" cy="70" r="9"/><circle cx="603" cy="132" r="9"/><circle cx="863" cy="132" r="9"/><circle cx="723" cy="372" r="9"/></g>
       </svg>`;
     }
     if (String(type || "") === "caminhao") {
-      return `<svg viewBox="0 0 720 320" role="img" aria-label="Desenho 3D de caminhão para checklist de avarias">
+      return `<svg viewBox="0 0 920 520" role="img" aria-label="Prancha técnica de caminhão para checklist de avarias">
         <defs>
-          <linearGradient id="truckSide" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#67e8f9"/><stop offset="45%" stop-color="#0e7490"/><stop offset="100%" stop-color="#164e63"/></linearGradient>
-          <linearGradient id="truckTop" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#cffafe"/><stop offset="100%" stop-color="#0891b2"/></linearGradient>
-          <linearGradient id="truckCab" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#f8fafc"/><stop offset="48%" stop-color="#38bdf8"/><stop offset="100%" stop-color="#0369a1"/></linearGradient>
-          <radialGradient id="truckWheel" cx="50%" cy="50%" r="55%"><stop offset="0%" stop-color="#cbd5e1"/><stop offset="45%" stop-color="#1e293b"/><stop offset="100%" stop-color="#020617"/></radialGradient>
-          <filter id="truckShadow" x="-20%" y="-20%" width="145%" height="155%"><feDropShadow dx="0" dy="18" stdDeviation="12" flood-color="#000" flood-opacity=".42"/></filter>
+          <linearGradient id="truckPanel" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#e5e7eb"/></linearGradient>
+          <linearGradient id="truckBody" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#f8fafc"/><stop offset="45%" stop-color="#dbeafe"/><stop offset="100%" stop-color="#94a3b8"/></linearGradient>
+          <linearGradient id="truckCabPaint" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#eff6ff"/><stop offset="50%" stop-color="#38bdf8"/><stop offset="100%" stop-color="#0369a1"/></linearGradient>
+          <radialGradient id="truckTireTech" cx="50%" cy="50%" r="55%"><stop offset="0%" stop-color="#f8fafc"/><stop offset="44%" stop-color="#334155"/><stop offset="100%" stop-color="#020617"/></radialGradient>
+          <filter id="truckPaperShadow" x="-5%" y="-5%" width="110%" height="120%"><feDropShadow dx="0" dy="10" stdDeviation="8" flood-color="#000" flood-opacity=".18"/></filter>
         </defs>
-        <ellipse cx="365" cy="268" rx="300" ry="28" fill="#000" opacity=".30"/>
-        <g filter="url(#truckShadow)">
-          <polygon points="80,118 376,118 428,82 134,82" fill="url(#truckTop)" stroke="#ecfeff" stroke-width="6" stroke-linejoin="round"/>
-          <polygon points="80,118 376,118 376,212 80,212" fill="url(#truckSide)" stroke="#e0f2fe" stroke-width="7" stroke-linejoin="round"/>
-          <polygon points="376,118 428,82 428,176 376,212" fill="#0e7490" stroke="#bae6fd" stroke-width="6" stroke-linejoin="round"/>
-          <polygon points="428,112 548,112 632,168 632,212 428,212" fill="url(#truckCab)" stroke="#e0f2fe" stroke-width="7" stroke-linejoin="round"/>
-          <polygon points="464,128 534,128 584,165 464,165" fill="#0f172a" opacity=".82" stroke="#bae6fd" stroke-width="5" stroke-linejoin="round"/>
-          <path d="M88 139h278M88 169h278M111 92h287" stroke="#ecfeff" stroke-width="4" opacity=".52" stroke-linecap="round"/>
-          <rect x="436" y="178" width="46" height="24" rx="5" fill="#164e63" stroke="#bae6fd" stroke-width="4"/>
-          <circle cx="166" cy="222" r="42" fill="url(#truckWheel)" stroke="#e5e7eb" stroke-width="9"/><circle cx="166" cy="222" r="17" fill="#0f172a" stroke="#38bdf8" stroke-width="5"/>
-          <circle cx="342" cy="222" r="42" fill="url(#truckWheel)" stroke="#e5e7eb" stroke-width="9"/><circle cx="342" cy="222" r="17" fill="#0f172a" stroke="#38bdf8" stroke-width="5"/>
-          <circle cx="552" cy="222" r="42" fill="url(#truckWheel)" stroke="#e5e7eb" stroke-width="9"/><circle cx="552" cy="222" r="17" fill="#0f172a" stroke="#38bdf8" stroke-width="5"/>
-          <path d="M630 190h32" stroke="#fef08a" stroke-width="8" stroke-linecap="round"/>
+        <rect x="18" y="18" width="884" height="484" rx="18" fill="url(#truckPanel)" stroke="#cbd5e1" stroke-width="4" filter="url(#truckPaperShadow)"/>
+        <g font-family="Arial, sans-serif" font-weight="700" fill="#334155" font-size="18">
+          <text x="44" y="54">CHECKLIST DE AVARIAS - CAMINHÃO / MUNCK</text>
+          <text x="62" y="244" font-size="13">LATERAL ESQUERDA</text>
+          <text x="538" y="244" font-size="13">LATERAL DIREITA</text>
+          <text x="130" y="84" font-size="13">VISTA SUPERIOR</text>
+          <text x="570" y="84" font-size="13">FRENTE / TRASEIRA</text>
         </g>
+        <g transform="translate(72 92)">
+          <rect x="40" y="28" width="312" height="86" rx="8" fill="url(#truckBody)" stroke="#111827" stroke-width="6"/>
+          <rect x="352" y="34" width="88" height="76" rx="8" fill="url(#truckCabPaint)" stroke="#111827" stroke-width="6"/>
+          <rect x="375" y="48" width="42" height="38" rx="4" fill="#e0f2fe" stroke="#334155" stroke-width="4"/>
+          <path d="M58 50h274M58 86h274" stroke="#94a3b8" stroke-width="4"/>
+          <circle cx="92" cy="128" r="16" fill="url(#truckTireTech)" stroke="#111827" stroke-width="5"/><circle cx="302" cy="128" r="16" fill="url(#truckTireTech)" stroke="#111827" stroke-width="5"/>
+        </g>
+        <g transform="translate(552 104)">
+          <rect x="0" y="0" width="120" height="120" rx="12" fill="url(#truckCabPaint)" stroke="#111827" stroke-width="6"/>
+          <rect x="24" y="18" width="72" height="42" rx="5" fill="#e0f2fe" stroke="#334155" stroke-width="4"/>
+          <circle cx="22" cy="132" r="17" fill="url(#truckTireTech)" stroke="#111827" stroke-width="5"/><circle cx="98" cy="132" r="17" fill="url(#truckTireTech)" stroke="#111827" stroke-width="5"/>
+          <rect x="172" y="0" width="120" height="120" rx="8" fill="url(#truckBody)" stroke="#111827" stroke-width="6"/>
+          <path d="M186 18h92M186 56h92M186 94h92" stroke="#94a3b8" stroke-width="4"/>
+        </g>
+        <g transform="translate(60 274)">
+          <ellipse cx="216" cy="162" rx="206" ry="18" fill="#0f172a" opacity=".12"/>
+          <rect x="20" y="50" width="270" height="94" rx="7" fill="url(#truckBody)" stroke="#111827" stroke-width="6"/>
+          <path d="M290 66h95l48 44v34H290z" fill="url(#truckCabPaint)" stroke="#111827" stroke-width="6" stroke-linejoin="round"/>
+          <path d="M318 78h48l28 30h-76z" fill="#e0f2fe" stroke="#334155" stroke-width="4"/>
+          <path d="M34 78h240M34 112h240" stroke="#94a3b8" stroke-width="4"/>
+          <circle cx="94" cy="152" r="29" fill="url(#truckTireTech)" stroke="#111827" stroke-width="7"/><circle cx="244" cy="152" r="29" fill="url(#truckTireTech)" stroke="#111827" stroke-width="7"/><circle cx="374" cy="152" r="29" fill="url(#truckTireTech)" stroke="#111827" stroke-width="7"/>
+        </g>
+        <g transform="translate(506 274)">
+          <ellipse cx="216" cy="162" rx="206" ry="18" fill="#0f172a" opacity=".12"/>
+          <path d="M20 66h95l48 44v34H20z" fill="url(#truckCabPaint)" stroke="#111827" stroke-width="6" stroke-linejoin="round"/>
+          <rect x="163" y="50" width="270" height="94" rx="7" fill="url(#truckBody)" stroke="#111827" stroke-width="6"/>
+          <path d="M48 78h48l28 30H48z" fill="#e0f2fe" stroke="#334155" stroke-width="4"/>
+          <path d="M182 78h232M182 112h232" stroke="#94a3b8" stroke-width="4"/>
+          <circle cx="78" cy="152" r="29" fill="url(#truckTireTech)" stroke="#111827" stroke-width="7"/><circle cx="210" cy="152" r="29" fill="url(#truckTireTech)" stroke="#111827" stroke-width="7"/><circle cx="360" cy="152" r="29" fill="url(#truckTireTech)" stroke="#111827" stroke-width="7"/>
+        </g>
+        <g stroke="#64748b" stroke-width="3" fill="none" opacity=".82"><path d="M112 365H48"/><path d="M433 365h48"/><path d="M742 330V286"/><path d="M696 137h72"/><path d="M248 118V82"/></g>
+        <g fill="#fff" stroke="#64748b" stroke-width="3"><circle cx="48" cy="365" r="9"/><circle cx="481" cy="365" r="9"/><circle cx="742" cy="286" r="9"/><circle cx="768" cy="137" r="9"/><circle cx="248" cy="82" r="9"/></g>
       </svg>`;
     }
-    return `<svg viewBox="0 0 680 310" role="img" aria-label="Desenho 3D de automóvel para checklist de avarias">
+    return `<svg viewBox="0 0 920 520" role="img" aria-label="Prancha técnica de automóvel para checklist de avarias">
       <defs>
-        <linearGradient id="carSide" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#60a5fa"/><stop offset="50%" stop-color="#2563eb"/><stop offset="100%" stop-color="#1e3a8a"/></linearGradient>
-        <linearGradient id="carTop" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#dbeafe"/><stop offset="100%" stop-color="#38bdf8"/></linearGradient>
-        <linearGradient id="glass" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#e0f2fe"/><stop offset="100%" stop-color="#0f172a"/></linearGradient>
-        <radialGradient id="carWheel" cx="50%" cy="50%" r="55%"><stop offset="0%" stop-color="#cbd5e1"/><stop offset="44%" stop-color="#1f2937"/><stop offset="100%" stop-color="#020617"/></radialGradient>
-        <filter id="carShadow" x="-20%" y="-20%" width="145%" height="155%"><feDropShadow dx="0" dy="16" stdDeviation="12" flood-color="#000" flood-opacity=".42"/></filter>
+        <linearGradient id="carPanel" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#e5e7eb"/></linearGradient>
+        <linearGradient id="carBodyTech" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#f8fafc"/><stop offset="48%" stop-color="#bfdbfe"/><stop offset="100%" stop-color="#64748b"/></linearGradient>
+        <linearGradient id="carGlassTech" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#e0f2fe"/><stop offset="100%" stop-color="#64748b"/></linearGradient>
+        <radialGradient id="carTireTech" cx="50%" cy="50%" r="55%"><stop offset="0%" stop-color="#f8fafc"/><stop offset="43%" stop-color="#475569"/><stop offset="100%" stop-color="#020617"/></radialGradient>
+        <filter id="carPaperShadow" x="-5%" y="-5%" width="110%" height="120%"><feDropShadow dx="0" dy="10" stdDeviation="8" flood-color="#000" flood-opacity=".18"/></filter>
       </defs>
-      <ellipse cx="344" cy="252" rx="260" ry="26" fill="#000" opacity=".30"/>
-      <g filter="url(#carShadow)">
-        <polygon points="130,149 220,83 454,83 544,149 500,178 166,178" fill="url(#carTop)" stroke="#eff6ff" stroke-width="7" stroke-linejoin="round"/>
-        <path d="M94 169c16-47 68-70 120-74h214c64 0 119 35 151 74l18 47c-31 15-78 23-136 23H194c-62 0-109-8-128-23z" fill="url(#carSide)" stroke="#dbeafe" stroke-width="8" stroke-linejoin="round"/>
-        <polygon points="230,98 321,98 308,145 170,145" fill="url(#glass)" opacity=".90" stroke="#bfdbfe" stroke-width="5"/>
-        <polygon points="337,98 440,98 508,145 324,145" fill="url(#glass)" opacity=".90" stroke="#bfdbfe" stroke-width="5"/>
-        <path d="M116 177h452M170 150h346M446 99l38 48" stroke="#bfdbfe" stroke-width="4" opacity=".58" stroke-linecap="round"/>
-        <rect x="118" y="193" width="45" height="18" rx="7" fill="#fef08a" opacity=".90"/>
-        <rect x="540" y="193" width="38" height="18" rx="7" fill="#fecaca" opacity=".90"/>
-        <circle cx="202" cy="226" r="43" fill="url(#carWheel)" stroke="#f8fafc" stroke-width="9"/><circle cx="202" cy="226" r="17" fill="#0f172a" stroke="#38bdf8" stroke-width="5"/>
-        <circle cx="486" cy="226" r="43" fill="url(#carWheel)" stroke="#f8fafc" stroke-width="9"/><circle cx="486" cy="226" r="17" fill="#0f172a" stroke="#38bdf8" stroke-width="5"/>
+      <rect x="18" y="18" width="884" height="484" rx="18" fill="url(#carPanel)" stroke="#cbd5e1" stroke-width="4" filter="url(#carPaperShadow)"/>
+      <g font-family="Arial, sans-serif" font-weight="700" fill="#334155" font-size="18">
+        <text x="44" y="54">CHECKLIST DE AVARIAS - AUTOMÓVEL / UTILITÁRIO</text>
+        <text x="76" y="244" font-size="13">LATERAL ESQUERDA</text>
+        <text x="532" y="244" font-size="13">LATERAL DIREITA</text>
+        <text x="146" y="84" font-size="13">VISTA SUPERIOR</text>
+        <text x="594" y="84" font-size="13">FRENTE / TRASEIRA</text>
       </g>
+      <g transform="translate(84 92)">
+        <path d="M44 83c22-37 65-56 128-56h134c62 0 109 19 133 56 13 52 10 94-10 127-118 24-260 24-376 0-19-35-21-77-9-127z" fill="url(#carBodyTech)" stroke="#111827" stroke-width="6"/>
+        <path d="M125 52h230l38 60H90z" fill="url(#carGlassTech)" opacity=".78" stroke="#334155" stroke-width="5"/>
+        <path d="M100 151h282M142 52v156M336 52v156" stroke="#94a3b8" stroke-width="4"/>
+        <rect x="62" y="26" width="34" height="30" rx="6" fill="#e5e7eb" stroke="#334155" stroke-width="4"/><rect x="382" y="26" width="34" height="30" rx="6" fill="#e5e7eb" stroke="#334155" stroke-width="4"/>
+      </g>
+      <g transform="translate(570 102)">
+        <path d="M24 26c36-18 142-18 178 0 20 30 23 78 10 118-42 17-156 17-198 0-13-40-10-88 10-118z" fill="url(#carBodyTech)" stroke="#111827" stroke-width="6"/>
+        <path d="M52 43h122l15 58H37z" fill="url(#carGlassTech)" stroke="#334155" stroke-width="5"/>
+        <rect x="26" y="118" width="37" height="16" rx="6" fill="#fef08a"/><rect x="162" y="118" width="37" height="16" rx="6" fill="#fef08a"/>
+        <path d="M86 154h54" stroke="#334155" stroke-width="5" stroke-linecap="round"/>
+        <path d="M280 26c36-18 142-18 178 0 20 30 23 78 10 118-42 17-156 17-198 0-13-40-10-88 10-118z" fill="url(#carBodyTech)" stroke="#111827" stroke-width="6" transform="translate(-18 0)"/>
+        <path d="M314 45h122l13 46H301z" fill="#e2e8f0" stroke="#334155" stroke-width="5"/>
+        <rect x="284" y="121" width="37" height="16" rx="6" fill="#fecaca"/><rect x="420" y="121" width="37" height="16" rx="6" fill="#fecaca"/>
+      </g>
+      <g transform="translate(60 284)">
+        <ellipse cx="219" cy="147" rx="198" ry="17" fill="#0f172a" opacity=".12"/>
+        <path d="M42 98c18-55 86-78 158-78h132c78 0 128 30 160 78l18 40c-24 17-73 26-137 26H166c-66 0-114-9-140-26z" fill="url(#carBodyTech)" stroke="#111827" stroke-width="6" stroke-linejoin="round"/>
+        <path d="M158 50h244l52 55H107z" fill="url(#carGlassTech)" opacity=".80" stroke="#334155" stroke-width="5" stroke-linejoin="round"/>
+        <path d="M74 112h408M185 50l-35 54M335 50l35 54" stroke="#94a3b8" stroke-width="4"/>
+        <circle cx="160" cy="166" r="31" fill="url(#carTireTech)" stroke="#111827" stroke-width="7"/><circle cx="402" cy="166" r="31" fill="url(#carTireTech)" stroke="#111827" stroke-width="7"/>
+      </g>
+      <g transform="translate(506 284)">
+        <ellipse cx="219" cy="147" rx="198" ry="17" fill="#0f172a" opacity=".12"/>
+        <path d="M42 98c18-55 86-78 158-78h132c78 0 128 30 160 78l18 40c-24 17-73 26-137 26H166c-66 0-114-9-140-26z" fill="url(#carBodyTech)" stroke="#111827" stroke-width="6" stroke-linejoin="round"/>
+        <path d="M158 50h244l52 55H107z" fill="url(#carGlassTech)" opacity=".80" stroke="#334155" stroke-width="5" stroke-linejoin="round"/>
+        <path d="M74 112h408M185 50l-35 54M335 50l35 54" stroke="#94a3b8" stroke-width="4"/>
+        <circle cx="160" cy="166" r="31" fill="url(#carTireTech)" stroke="#111827" stroke-width="7"/><circle cx="402" cy="166" r="31" fill="url(#carTireTech)" stroke="#111827" stroke-width="7"/>
+      </g>
+      <g stroke="#64748b" stroke-width="3" fill="none" opacity=".82">
+        <path d="M120 386H52"/><path d="M510 386h54"/><path d="M736 120V82"/><path d="M254 142V82"/><path d="M824 154h54"/><path d="M716 448v34"/>
+      </g>
+      <g fill="#fff" stroke="#64748b" stroke-width="3"><circle cx="52" cy="386" r="9"/><circle cx="564" cy="386" r="9"/><circle cx="736" cy="82" r="9"/><circle cx="254" cy="82" r="9"/><circle cx="878" cy="154" r="9"/><circle cx="716" cy="482" r="9"/></g>
     </svg>`;
   }
 
