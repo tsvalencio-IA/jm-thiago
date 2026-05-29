@@ -4,7 +4,7 @@
   const { $, esc, parseMoney, toast, statusClass, routeKm, mapsRouteUrl, statusKey, statusLabel, isFinalStatus, setupCollapsiblePanels, pointFrom } = window.JM.utils;
   const { auth, db, arrayUnion, getRealtimeDb, rtdbKey } = window.JM.firebase;
   const cfg = window.JM_CONFIG || {};
-  const DRIVER_FLOW_VERSION = "jm-v28-ia-seguradoras-checklist-tema";
+  const DRIVER_FLOW_VERSION = "jm-v28-2-motorista-checklist-assinatura";
   const state = { user: null, profile: null, calls: {}, vehicles: {}, expenses: {}, settings: {}, selectedCallId: "", driverLivePoint: null };
   const unsubscribers = [];
   let driverLocationWatchId = null;
@@ -13,7 +13,15 @@
   let mapRenderTimer = null;
   let lastSelectSignature = "";
   let lastRenderedCallsHtml = "";
+  let lastLoadedProofCallId = "";
   const PROOF_STAGES = ["retirada", "carregamento", "transporte", "entrega", "finalizacao"];
+  const PROOF_STAGE_FIELDS = {
+    retirada: { select: "proofStageRetirada", justification: "proofStageRetiradaJustification", label: "Retirada" },
+    carregamento: { select: "proofStageCarregamento", justification: "proofStageCarregamentoJustification", label: "Carregamento" },
+    transporte: { select: "proofStageTransporte", justification: "", label: "Transporte" },
+    entrega: { select: "proofStageEntrega", justification: "proofStageEntregaJustification", label: "Entrega" },
+    finalizacao: { select: "proofStageFinalizacao", justification: "proofStageFinalizacaoJustification", label: "Finalização" }
+  };
   const REQUIRED_PHOTOS = [
     { key: "front", input: "proofPhotoFront", label: "Frente" },
     { key: "rear", input: "proofPhotoRear", label: "Traseira" },
@@ -90,6 +98,8 @@
   ];
   let signaturePad = null;
   let selectedDamageParts = new Set();
+  let selectedDamageNotes = {};
+  let activeDamagePartKey = "";
   const ACCESSORY_STATUS_LABELS = { sim: "S", nao: "N", avaria: "A" };
 
   function friendlyAuthError(err) {
@@ -565,8 +575,25 @@
         }
       }
     }
-    signaturePad = { canvas, ctx, drawing: false, dirty: false, pointerId: null, lastPoint: null };
+    signaturePad = { canvas, ctx, drawing: false, dirty: false, enabled: false, pointerId: null, lastPoint: null };
     resizeSignatureCanvas();
+    function setSignatureMode(enabled) {
+      signaturePad.enabled = !!enabled;
+      canvas.classList.toggle("is-signing", signaturePad.enabled);
+      canvas.classList.toggle("is-scroll-mode", !signaturePad.enabled);
+      const btn = $("toggleSignatureModeBtn");
+      const hint = $("signatureModeHint");
+      if (btn) {
+        btn.textContent = signaturePad.enabled ? "Concluir assinatura" : "Ativar assinatura";
+        btn.setAttribute("aria-pressed", signaturePad.enabled ? "true" : "false");
+        btn.classList.toggle("good", signaturePad.enabled);
+      }
+      if (hint) {
+        hint.textContent = signaturePad.enabled
+          ? "Modo assinatura ativo. Assine dentro do quadro; toque em Concluir assinatura para voltar a rolar a tela normalmente."
+          : "Modo assinatura desligado. Voce pode rolar a tela passando o dedo sobre a area da assinatura.";
+      }
+    }
     function point(evt) {
       const rect = canvas.getBoundingClientRect();
       const src = evt.touches && evt.touches[0] || evt;
@@ -578,6 +605,7 @@
       };
     }
     function start(evt) {
+      if (!signaturePad.enabled) return;
       evt.preventDefault();
       resizeSignatureCanvas();
       const p = point(evt);
@@ -615,11 +643,13 @@
     canvas.addEventListener("pointercancel", end, { passive: false });
     canvas.addEventListener("pointerleave", end, { passive: false });
     window.addEventListener("resize", () => resizeSignatureCanvas());
+    if ($("toggleSignatureModeBtn")) $("toggleSignatureModeBtn").onclick = () => setSignatureMode(!signaturePad.enabled);
     if ($("clearSignatureBtn")) $("clearSignatureBtn").onclick = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       signaturePad.dirty = false;
       signaturePad.lastPoint = null;
     };
+    setSignatureMode(false);
   }
 
   function signatureBlob() {
@@ -629,30 +659,178 @@
     });
   }
 
+  function stageSelect(stage) {
+    const cfg = PROOF_STAGE_FIELDS[stage] || {};
+    return cfg.select ? $(cfg.select) : null;
+  }
+
+  function refreshStageButtons(stage) {
+    const select = stageSelect(stage);
+    const host = document.querySelector(`.proof-stage-buttons[data-stage="${stage}"]`);
+    if (!select || !host) return;
+    host.querySelectorAll("button").forEach((btn) => {
+      const active = btn.dataset.value === select.value;
+      btn.classList.toggle("active", active);
+      btn.setAttribute("aria-pressed", active ? "true" : "false");
+    });
+  }
+
+  function setProofStageValue(stage, value, touched) {
+    const select = stageSelect(stage);
+    if (!select) return;
+    select.value = value || "pendente";
+    select.dataset.touched = touched ? "true" : "false";
+    refreshStageButtons(stage);
+  }
+
+  function focusStageJustification(stage, value) {
+    const cfg = PROOF_STAGE_FIELDS[stage] || {};
+    const needsText = ["avaria", "intercorrencia", "recusa", "justificado"].includes(String(value || ""));
+    if (!needsText || !cfg.justification || !$(cfg.justification)) return;
+    setTimeout(() => $(cfg.justification).focus(), 80);
+  }
+
+  function setupProofStageButtons() {
+    PROOF_STAGES.forEach((stage) => {
+      const select = stageSelect(stage);
+      if (!select || select.dataset.buttonized === "true") return;
+      select.dataset.buttonized = "true";
+      select.classList.add("proof-stage-native-select");
+      const host = document.createElement("div");
+      host.className = "proof-stage-buttons";
+      host.dataset.stage = stage;
+      host.innerHTML = Array.from(select.options).map((option) => (
+        `<button class="proof-stage-choice" type="button" data-value="${esc(option.value)}" aria-pressed="false">${esc(option.textContent || option.value)}</button>`
+      )).join("");
+      select.insertAdjacentElement("afterend", host);
+      host.addEventListener("click", (event) => {
+        const btn = event.target && event.target.closest && event.target.closest("button[data-value]");
+        if (!btn) return;
+        select.value = btn.dataset.value || "pendente";
+        select.dataset.touched = "true";
+        refreshStageButtons(stage);
+        focusStageJustification(stage, select.value);
+      });
+      select.addEventListener("change", () => {
+        select.dataset.touched = "true";
+        refreshStageButtons(stage);
+        focusStageJustification(stage, select.value);
+      });
+      refreshStageButtons(stage);
+    });
+  }
+
   function updateDamageSummary() {
     const summary = $("damagePartsSummary");
     if (!summary) return;
     const labels = Array.from(selectedDamageParts).map((key) => {
       const item = DAMAGE_PARTS.find((part) => part.key === key);
-      return item && item.label || key;
+      const note = selectedDamageNotes[key] ? " - " + selectedDamageNotes[key] : "";
+      return (item && item.label || key) + note;
     });
     summary.textContent = labels.length ? "Avarias marcadas: " + labels.join(", ") : "Nenhum ponto de avaria marcado no desenho.";
+  }
+
+  function damagePartsForType(type) {
+    if (String(type || "") === "caminhao") return DAMAGE_PARTS;
+    return DAMAGE_PARTS.filter((part) => part.key !== "truck_bed");
+  }
+
+  function damageVehicleSvg(type) {
+    if (String(type || "") === "moto") {
+      return `<svg viewBox="0 0 420 190" role="img" aria-label="Desenho de moto"><path d="M92 139h72l54-54h67l39 54" fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/><circle cx="92" cy="139" r="32" fill="none" stroke="currentColor" stroke-width="12"/><circle cx="326" cy="139" r="32" fill="none" stroke="currentColor" stroke-width="12"/><path d="M210 86l-28-36h45l14 36m47-2l42-34" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round"/></svg>`;
+    }
+    if (String(type || "") === "caminhao") {
+      return `<svg viewBox="0 0 520 220" role="img" aria-label="Desenho de caminhão"><rect x="42" y="82" width="270" height="78" rx="10" fill="none" stroke="currentColor" stroke-width="10"/><path d="M312 100h86l50 36v24H312z" fill="none" stroke="currentColor" stroke-width="10" stroke-linejoin="round"/><path d="M338 110h45l25 26h-70z" fill="none" stroke="currentColor" stroke-width="7"/><circle cx="124" cy="172" r="25" fill="none" stroke="currentColor" stroke-width="10"/><circle cx="276" cy="172" r="25" fill="none" stroke="currentColor" stroke-width="10"/><circle cx="398" cy="172" r="25" fill="none" stroke="currentColor" stroke-width="10"/></svg>`;
+    }
+    return `<svg viewBox="0 0 480 220" role="img" aria-label="Desenho de automóvel"><path d="M82 145h316l-18-54c-6-17-20-29-38-29H180c-18 0-34 10-43 26l-28 57z" fill="none" stroke="currentColor" stroke-width="10" stroke-linejoin="round"/><path d="M170 96h61V72h-40c-11 0-18 6-21 16zm80 0h93l-10-18c-3-5-10-6-17-6h-66z" fill="none" stroke="currentColor" stroke-width="7"/><circle cx="146" cy="155" r="27" fill="none" stroke="currentColor" stroke-width="10"/><circle cx="346" cy="155" r="27" fill="none" stroke="currentColor" stroke-width="10"/></svg>`;
+  }
+
+  function renderDamageEditor() {
+    const editor = $("damageSelectedEditor");
+    if (!editor) return;
+    const part = DAMAGE_PARTS.find((item) => item.key === activeDamagePartKey);
+    if (!part || !selectedDamageParts.has(activeDamagePartKey)) {
+      editor.classList.add("hidden");
+      editor.innerHTML = "";
+      return;
+    }
+    editor.classList.remove("hidden");
+    editor.innerHTML = `
+      <div class="damage-editor-head">
+        <b>Avaria em: ${esc(part.label)}</b>
+        <button class="btn mini" type="button" data-action="close">Fechar</button>
+      </div>
+      <textarea id="damagePartNoteInput" placeholder="Descreva a avaria desta parte. Ex.: riscado, amassado, quebrado, vazando, pneu murcho.">${esc(selectedDamageNotes[part.key] || "")}</textarea>
+      <div class="actions">
+        <button class="btn good" type="button" data-action="save">Salvar descrição</button>
+        <button class="btn danger" type="button" data-action="remove">Remover marcação</button>
+      </div>`;
+    const input = $("damagePartNoteInput");
+    if (input) {
+      input.oninput = () => {
+        selectedDamageNotes[part.key] = input.value.trim();
+        updateDamageSummary();
+      };
+      setTimeout(() => input.focus(), 80);
+    }
+    editor.querySelectorAll("[data-action]").forEach((btn) => {
+      btn.onclick = () => {
+        const action = btn.getAttribute("data-action");
+        if (action === "save" && input) selectedDamageNotes[part.key] = input.value.trim();
+        if (action === "remove") {
+          selectedDamageParts.delete(part.key);
+          delete selectedDamageNotes[part.key];
+          activeDamagePartKey = "";
+          setupDamageDiagram();
+        }
+        if (action === "close" || action === "save") {
+          activeDamagePartKey = "";
+          renderDamageEditor();
+        }
+        updateDamageSummary();
+      };
+    });
   }
 
   function setupDamageDiagram() {
     const box = $("damageDiagram");
     if (!box) return;
-    box.innerHTML = DAMAGE_PARTS.map((part) => `<button class="damage-part" type="button" data-part="${esc(part.key)}">${esc(part.label)}</button>`).join("");
-    box.addEventListener("click", (event) => {
+    const type = $("damageVehicleType") ? $("damageVehicleType").value : "carro";
+    const parts = damagePartsForType(type);
+    box.className = "damage-diagram damage-diagram-visual damage-type-" + String(type || "carro");
+    box.innerHTML = `
+      <div class="damage-vehicle-svg">${damageVehicleSvg(type)}</div>
+      <div class="damage-zone-layer">
+        ${parts.map((part) => `<button class="damage-zone damage-part damage-zone-${esc(part.key)}${selectedDamageParts.has(part.key) ? " selected" : ""}" type="button" data-part="${esc(part.key)}" aria-pressed="${selectedDamageParts.has(part.key) ? "true" : "false"}">${esc(part.label)}</button>`).join("")}
+      </div>`;
+    box.onclick = (event) => {
       const btn = event.target && event.target.closest && event.target.closest(".damage-part");
       if (!btn) return;
       const key = btn.getAttribute("data-part");
       if (!key) return;
-      if (selectedDamageParts.has(key)) selectedDamageParts.delete(key);
-      else selectedDamageParts.add(key);
-      btn.classList.toggle("selected", selectedDamageParts.has(key));
+      if (selectedDamageParts.has(key)) {
+        selectedDamageParts.delete(key);
+        delete selectedDamageNotes[key];
+        if (activeDamagePartKey === key) activeDamagePartKey = "";
+      } else {
+        selectedDamageParts.add(key);
+        activeDamagePartKey = key;
+        const retiradaSelect = stageSelect("retirada");
+        if (retiradaSelect && retiradaSelect.value === "pendente") setProofStageValue("retirada", "avaria", true);
+      }
+      setupDamageDiagram();
+      renderDamageEditor();
       updateDamageSummary();
-    });
+    };
+    if ($("damageVehicleType") && $("damageVehicleType").dataset.boundDamageType !== "true") {
+      $("damageVehicleType").dataset.boundDamageType = "true";
+      $("damageVehicleType").onchange = () => {
+        setupDamageDiagram();
+        renderDamageEditor();
+      };
+    }
+    renderDamageEditor();
     updateDamageSummary();
   }
 
@@ -713,7 +891,7 @@
     const details = $("proofDamageDetails") ? $("proofDamageDetails").value.trim() : "";
     const parts = Array.from(selectedDamageParts).map((key) => {
       const item = DAMAGE_PARTS.find((part) => part.key === key);
-      return { key, label: item && item.label || key };
+      return { key, label: item && item.label || key, note: selectedDamageNotes[key] || "" };
     });
     return {
       vehicleType,
@@ -726,8 +904,57 @@
 
   function resetDamageDiagram() {
     selectedDamageParts = new Set();
+    selectedDamageNotes = {};
+    activeDamagePartKey = "";
     document.querySelectorAll(".damage-part.selected").forEach((btn) => btn.classList.remove("selected"));
+    setupDamageDiagram();
     updateDamageSummary();
+  }
+
+  function fieldValue(id, value) {
+    if ($(id)) $(id).value = value == null ? "" : value;
+  }
+
+  function loadDamageAssessmentPayload(damage) {
+    damage = damage || {};
+    const parts = Array.isArray(damage.parts) ? damage.parts : [];
+    selectedDamageParts = new Set(parts.map((part) => part && part.key).filter(Boolean));
+    selectedDamageNotes = {};
+    parts.forEach((part) => {
+      if (part && part.key && part.note) selectedDamageNotes[part.key] = part.note;
+    });
+    activeDamagePartKey = "";
+    if ($("damageVehicleType")) $("damageVehicleType").value = damage.vehicleType || $("damageVehicleType").value || "carro";
+    fieldValue("proofDamageDetails", damage.details || "");
+    setupDamageDiagram();
+  }
+
+  function loadProofFormForCall(callId, sourceCall) {
+    const call = sourceCall || state.calls[callId];
+    if (!call) return;
+    lastLoadedProofCallId = callId || "";
+    const checklist = call.proofChecklist || {};
+    PROOF_STAGES.forEach((stage) => {
+      const cfg = PROOF_STAGE_FIELDS[stage] || {};
+      const row = checklist[stage] || {};
+      setProofStageValue(stage, row.status || "pendente", false);
+      if (cfg.justification) fieldValue(cfg.justification, row.justificativa || "");
+    });
+    fieldValue("proofChecklistNotes", checklist.notes || "");
+    const inspection = checklist.vehicleInspection || {};
+    fieldValue("proofFuelLevel", inspection.fuelLevel || "");
+    fieldValue("proofOdometer", inspection.odometer || "");
+    fieldValue("proofTireCondition", inspection.tireCondition || "");
+    fieldValue("proofKeyDocument", inspection.keyDocument || "");
+    fieldValue("proofVehicleLoaded", inspection.vehicleLoaded || "");
+    fieldValue("proofEasyRemoval", inspection.easyRemoval || "");
+    fieldValue("proofVehicleTechnicalNotes", inspection.technicalNotes || "");
+    fieldValue("proofPickupResponsibleName", inspection.pickupResponsible && inspection.pickupResponsible.name || "");
+    fieldValue("proofPickupResponsibleDoc", inspection.pickupResponsible && inspection.pickupResponsible.document || "");
+    fieldValue("proofDeliveryResponsibleName", inspection.deliveryResponsible && inspection.deliveryResponsible.name || "");
+    fieldValue("proofDeliveryResponsibleDoc", inspection.deliveryResponsible && inspection.deliveryResponsible.document || "");
+    loadDamageAssessmentPayload(checklist.damageAssessment || call.damageAssessment || {});
+    setProofSubmitStatus("Checklist carregado. Toque nas etapas que esta registrando agora; o que ja foi salvo fica preservado.", "info", false);
   }
 
   function normalizeDriverProfile(user, data) {
@@ -856,6 +1083,7 @@
   $("driverLogoutBtn").onclick = () => auth.signOut();
   $("driverRefreshBtn").onclick = () => render("manual");
   if ($("driverExpenseCall")) $("driverExpenseCall").onchange = syncDriverExpenseContext;
+  if ($("driverProofCall")) $("driverProofCall").onchange = () => loadProofFormForCall($("driverProofCall").value);
   if ($("driverStartLocationBtn")) $("driverStartLocationBtn").onclick = startDriverPhoneLocation;
   if ($("driverStopLocationBtn")) $("driverStopLocationBtn").onclick = stopDriverPhoneLocation;
 
@@ -925,6 +1153,9 @@
     setSelectOptionsStable($("driverExpenseVehicle"), vehicleHtml, currentVehicle);
 
     lastSelectSignature = sig;
+    if ($("driverProofCall") && $("driverProofCall").value && $("driverProofCall").value !== lastLoadedProofCallId) {
+      loadProofFormForCall($("driverProofCall").value);
+    }
     syncDriverExpenseContext();
   }
 
@@ -1334,22 +1565,42 @@
     const hasNewSignature = !!(signaturePad && signaturePad.dirty);
     if ((hasNewSignature || signatureRefusalReason) && !acceptedText) return setProofSubmitStatus("O aceite textual é obrigatório quando houver assinatura ou justificativa de recusa.", "danger");
 
+    const previousChecklist = call.proofChecklist || {};
     const checklist = {
-      retirada: { status: $("proofStageRetirada").value, label: "Retirada", justificativa: $("proofStageRetiradaJustification") ? $("proofStageRetiradaJustification").value.trim() : "" },
-      carregamento: { status: $("proofStageCarregamento").value, label: "Carregamento", justificativa: $("proofStageCarregamentoJustification") ? $("proofStageCarregamentoJustification").value.trim() : "" },
-      transporte: { status: $("proofStageTransporte").value, label: "Transporte" },
-      entrega: { status: $("proofStageEntrega").value, label: "Entrega", justificativa: $("proofStageEntregaJustification") ? $("proofStageEntregaJustification").value.trim() : "" },
-      finalizacao: { status: $("proofStageFinalizacao").value, label: "Finalização", justificativa: $("proofStageFinalizacaoJustification") ? $("proofStageFinalizacaoJustification").value.trim() : "" },
-      notes: $("proofChecklistNotes").value.trim(),
+      notes: $("proofChecklistNotes").value.trim() || previousChecklist.notes || "",
       vehicleInspection: technicalInspectionPayload(),
       damageAssessment: damageAssessmentPayload(),
       updatedAt: new Date().toISOString(),
       updatedBy: state.user.uid
     };
+    PROOF_STAGES.forEach((stage) => {
+      const cfg = PROOF_STAGE_FIELDS[stage] || {};
+      const select = stageSelect(stage);
+      const previous = previousChecklist[stage] || {};
+      const justification = cfg.justification && $(cfg.justification) ? $(cfg.justification).value.trim() : previous.justificativa || "";
+      const selectedStatus = select && select.value || "pendente";
+      const touched = !!(select && select.dataset.touched === "true");
+      const shouldUpdate = touched || !!justification || selectedStatus !== (previous.status || "pendente");
+      checklist[stage] = Object.assign({}, previous, {
+        status: shouldUpdate ? selectedStatus : previous.status || "pendente",
+        label: cfg.label || previous.label || stage,
+        justificativa: shouldUpdate ? justification : previous.justificativa || ""
+      });
+    });
+    const hasStageTouchedNow = PROOF_STAGES.some((stage) => {
+      const select = stageSelect(stage);
+      return !!(select && select.dataset.touched === "true");
+    });
     const hasAnyStageUpdate = PROOF_STAGES.some((stage) => checklist[stage].status !== "pendente");
     const stagesNeedingJustification = PROOF_STAGES.filter((stage) => {
+      const select = stageSelect(stage);
       const row = checklist[stage] || {};
-      return ["avaria", "intercorrencia", "recusa", "justificado"].includes(String(row.status || "")) && !String(row.justificativa || "").trim();
+      const touched = !!(select && select.dataset.touched === "true");
+      const hasDamageDescription = stage === "retirada"
+        && String(row.status || "") === "avaria"
+        && (selectedDamageParts.size > 0)
+        && (($("proofDamageDetails") && $("proofDamageDetails").value.trim()) || Object.values(selectedDamageNotes).some((note) => String(note || "").trim()));
+      return touched && !hasDamageDescription && ["avaria", "intercorrencia", "recusa", "justificado"].includes(String(row.status || "")) && !String(row.justificativa || "").trim();
     });
     if (stagesNeedingJustification.length) {
       return setProofSubmitStatus("Preencha a justificativa das etapas: " + stagesNeedingJustification.map((stage) => checklist[stage].label || stage).join(", ") + ".", "danger");
@@ -1362,8 +1613,8 @@
       return !!(input && input.files && input.files[0]);
     });
     const missingBeforeUpload = requiredPhotos.filter((photo) => !hasPhotoType(call, photo.key) && !selectedPhotos.some((p) => p.key === photo.key));
-    if (!hasAnyStageUpdate && !selectedPhotos.length && !hasNewSignature && !signatureRefusalReason && !checklist.notes) {
-      return setProofSubmitStatus("Marque a etapa que está sendo registrada ou envie pelo menos uma foto/assinatura/justificativa.", "danger");
+    if (!hasStageTouchedNow && !selectedPhotos.length && !hasNewSignature && !signatureRefusalReason && !checklist.notes && selectedDamageParts.size === 0) {
+      return setProofSubmitStatus("Toque na etapa que esta registrando agora, marque avarias no desenho ou envie pelo menos uma foto/assinatura/justificativa.", "danger");
     }
     if (missingBeforeUpload.length) {
       return setProofSubmitStatus("Faltam fotos obrigatórias para a etapa marcada: " + missingBeforeUpload.map((photo) => photo.label).join(", ") + ". Se não for possível fotografar, marque a etapa como Justificado e escreva o motivo.", "danger");
@@ -1489,12 +1740,17 @@
         } catch (_) {}
       }
 
-      e.target.reset();
+      REQUIRED_PHOTOS.forEach((photo) => {
+        const input = $(photo.input);
+        if (input) input.value = "";
+      });
+      fieldValue("signatureRefusalReason", "");
       if (signaturePad) {
         signaturePad.ctx.clearRect(0, 0, signaturePad.canvas.width, signaturePad.canvas.height);
         signaturePad.dirty = false;
+        signaturePad.drawing = false;
       }
-      resetDamageDiagram();
+      loadProofFormForCall(callId, nextCall);
       const savedLabels = proofPhotoLabelList(uploadedPhotos) || "nenhuma foto nova, dados atualizados";
       const missingText = missingAfterUpload.length ? " Faltam para ficar completo: " + missingAfterUpload.map((photo) => photo.label).join(", ") + "." : "";
       const okMsg = nextProofStatus === "completo"
@@ -1512,6 +1768,7 @@
 
   window.JM = window.JM || {};
   window.JM.motorista = { setStatus, acceptCall, openRouteForCall, openExternalRouteForCall, startRouteForCall, startLocationForCall: startDriverPhoneLocation, stopDriverPhoneLocation, state };
+  setupProofStageButtons();
   setupSignaturePad();
   setupDamageDiagram();
   setupAccessoryChecklist();

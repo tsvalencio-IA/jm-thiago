@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#07111f">
   <title>JM Guinchos - Motorista</title>
-  <link rel="manifest" href="manifest.json?v=jm-v28-ia-seguradoras-checklist-tema">
+  <link rel="manifest" href="manifest.json?v=jm-v28-2-motorista-checklist-assinatura">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="css/style.css?v=jm-v28-ia-seguradoras-checklist-tema">
+  <link rel="stylesheet" href="css/style.css?v=jm-v28-2-motorista-checklist-assinatura">
 </head>
 <body>
   <section id="driverLoginView" class="login">
@@ -140,6 +140,7 @@
             <div class="wide">
               <label>Toque nas partes com avaria</label>
               <div id="damageDiagram" class="damage-diagram" aria-label="Mapa de avarias do veículo"></div>
+              <div id="damageSelectedEditor" class="damage-editor hidden" aria-live="polite"></div>
               <p id="damagePartsSummary" class="muted small"></p>
             </div>
             <div class="wide"><label>Descrição das avarias</label><textarea id="proofDamageDetails" placeholder="Ex.: risco na lateral direita, para-choque dianteiro trincado, pneu murcho, vidro quebrado."></textarea></div>
@@ -169,6 +170,10 @@
             <div class="wide"><label>Justificativa se não houver assinatura</label><textarea id="signatureRefusalReason" placeholder="Preencha se o cliente não puder ou se recusar a assinar. Ex.: cliente ausente, seguradora autorizou sem assinatura, local de risco, entrega em pátio."></textarea></div>
             <div class="wide">
               <label>Assinatura na tela</label>
+              <div class="signature-mode-toolbar">
+                <button class="btn primary" id="toggleSignatureModeBtn" type="button" aria-pressed="false">Ativar assinatura</button>
+                <span id="signatureModeHint" class="muted small">Com o modo desligado, você consegue rolar a tela passando o dedo sobre a área da assinatura.</span>
+              </div>
               <canvas id="signatureCanvas" class="signature-pad" width="720" height="260"></canvas>
               <div class="actions" style="margin-top:8px">
                 <button class="btn" id="clearSignatureBtn" type="button">Limpar assinatura</button>
@@ -191,15 +196,15 @@
   <footer class="signature-footer" aria-hidden="true"></footer>
   <div id="toast" class="toast"></div>
 
-  <script src="js/config.firebase.js?v=jm-v28-ia-seguradoras-checklist-tema"></script>
+  <script src="js/config.firebase.js?v=jm-v28-2-motorista-checklist-assinatura"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
-  <script src="js/utils.js?v=jm-v28-ia-seguradoras-checklist-tema"></script>
-  <script src="js/firebase.js?v=jm-v28-ia-seguradoras-checklist-tema"></script>
-  <script src="js/google-maps.js?v=jm-v28-ia-seguradoras-checklist-tema"></script>
-  <script src="js/mapa.js?v=jm-v28-ia-seguradoras-checklist-tema"></script>
-  <script src="js/motorista.js?v=jm-v28-ia-seguradoras-checklist-tema"></script>
+  <script src="js/utils.js?v=jm-v28-2-motorista-checklist-assinatura"></script>
+  <script src="js/firebase.js?v=jm-v28-2-motorista-checklist-assinatura"></script>
+  <script src="js/google-maps.js?v=jm-v28-2-motorista-checklist-assinatura"></script>
+  <script src="js/mapa.js?v=jm-v28-2-motorista-checklist-assinatura"></script>
+  <script src="js/motorista.js?v=jm-v28-2-motorista-checklist-assinatura"></script>
 </body>
 </html>

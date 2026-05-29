@@ -1,4 +1,4 @@
-const CACHE_NAME = "jm-v28-1-frete-pedagio";
+const CACHE_NAME = "jm-v28-2-motorista-checklist-assinatura";
 const ASSETS = [
   "./",
   "./index.html",
