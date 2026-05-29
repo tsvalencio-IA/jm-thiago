@@ -10,7 +10,7 @@
   const { auth, secondaryAuth, db, ts, arrayUnion, emailIsAdmin, getRealtimeDb, rtdbKey } = window.JM.firebase;
   const cfg = window.JM_CONFIG || {};
   const SYSTEM_SIGNATURE = "";
-  const LOGIN_FLOW_VERSION = "jm-v28-ia-seguradoras-checklist-tema";
+  const LOGIN_FLOW_VERSION = "jm-v28-1-frete-pedagio";
   let trackerTimer = null;
   let trackerBusy = false;
   let mapRefreshTimer = null;
@@ -428,25 +428,39 @@
     const discountPct = pct($("callTowDiscountPct") && $("callTowDiscountPct").value || 0);
     const roundTrip = $("callTowRoundTrip") ? !!$("callTowRoundTrip").checked : true;
     const subtractFranchise = $("callTowSubtractFranchise") ? !!$("callTowSubtractFranchise").checked : false;
+    const tollOneWay = parseMoney($("callTowTollOneWay") && $("callTowTollOneWay").value || 0);
+    const tollRoundTrip = $("callTowTollRoundTrip") ? !!$("callTowTollRoundTrip").checked : true;
+    const legMultiplier = roundTrip ? 2 : 1;
     const chargedKm = active ? Math.max(kmTotal - (subtractFranchise ? franchiseKm : 0), 0) : 0;
+    const chargedKmTotal = active ? round2(chargedKm * legMultiplier) : 0;
+    const operationalKm = active ? round2(kmTotal * legMultiplier) : 0;
     const factor = Math.max(0, 1 - discountPct / 100);
     const netOut = active ? round2(baseOut * factor) : 0;
     const netKm = active ? trunc2(kmValue * factor) : 0;
     const oneWay = active ? round2(netOut + chargedKm * netKm) : 0;
-    const total = active ? round2(oneWay * (roundTrip ? 2 : 1)) : 0;
-    const subtotal = active ? round2(baseOut + chargedKm * kmValue) : 0;
-    const discountValue = active ? round2(subtotal - oneWay) : 0;
+    const tollTotal = active ? round2(tollOneWay * (tollRoundTrip && roundTrip ? 2 : 1)) : 0;
+    const totalWithoutToll = active ? round2(oneWay * legMultiplier) : 0;
+    const total = active ? round2(totalWithoutToll + tollTotal) : 0;
+    const subtotalWithoutDiscount = active ? round2((baseOut + chargedKm * kmValue) * legMultiplier) : 0;
+    const subtotal = active ? round2(subtotalWithoutDiscount + tollTotal) : 0;
+    const discountValue = active ? round2(subtotalWithoutDiscount - totalWithoutToll) : 0;
     const data = {
       ativo: active,
       tipo: type,
       tipoLabel: defaults.label,
       kmTotal,
+      kmIda: kmTotal,
+      kmPorTrecho: kmTotal,
+      kmOperacional: operationalKm,
       franquiaKm: franchiseKm,
       abaterFranquia: subtractFranchise,
       kmExcedente: chargedKm,
       kmCobrado: chargedKm,
+      kmCobradoPorTrecho: chargedKm,
+      kmCobradoTotal: chargedKmTotal,
       cobrarIdaVolta: roundTrip,
       idaVolta: roundTrip,
+      multiplicadorTrecho: legMultiplier,
       valorSaida: baseOut,
       valorKmAdicional: kmValue,
       descontoPct: discountPct,
@@ -455,7 +469,17 @@
       saidaLiquida: netOut,
       kmLiquido: netKm,
       valorIda: oneWay,
+      valorPorTrecho: oneWay,
+      totalSemPedagio: totalWithoutToll,
+      totalGuinchoSemPedagio: totalWithoutToll,
+      valorPedagioIda: tollOneWay,
+      pedagioIda: tollOneWay,
+      cobrarPedagioIdaVolta: tollRoundTrip,
+      pedagioIdaVolta: tollRoundTrip,
+      pedagioTotal: tollTotal,
+      valorPedagios: tollTotal,
       subtotal,
+      subtotalSemDesconto: subtotalWithoutDiscount,
       descontoValor: discountValue,
       total,
       obs: $("callTowNotes") ? $("callTowNotes").value.trim() : ""
@@ -463,6 +487,7 @@
     if ($("callTowNetOut")) $("callTowNetOut").value = money(netOut);
     if ($("callTowNetKm")) $("callTowNetKm").value = money(netKm);
     if ($("callTowOneWay")) $("callTowOneWay").value = money(oneWay);
+    if ($("callTowTollTotal")) $("callTowTollTotal").value = money(tollTotal);
     if ($("callTowTotal")) $("callTowTotal").value = money(total);
     return data;
   }
@@ -480,6 +505,8 @@
     setValue("callTowDiscountPct", g.descontoPct ?? g.descPct ?? g.ajustePct ?? 0);
     if ($("callTowRoundTrip")) $("callTowRoundTrip").checked = g.cobrarIdaVolta ?? g.idaVolta ?? true;
     if ($("callTowSubtractFranchise")) $("callTowSubtractFranchise").checked = !!(g.abaterFranquia || g.usarFranquia || g.abaterKmFranquia);
+    setValue("callTowTollOneWay", brNumber(g.valorPedagioIda ?? g.pedagioIda ?? 0));
+    if ($("callTowTollRoundTrip")) $("callTowTollRoundTrip").checked = g.cobrarPedagioIdaVolta ?? g.pedagioIdaVolta ?? true;
     setValue("callTowNotes", g.obs || "");
     calculateTowPricing();
   }
@@ -509,7 +536,7 @@
     setValue("callTowKm", brNumber(km));
     if ($("callTowActive")) $("callTowActive").checked = true;
     const data = calculateTowPricing();
-    setTowStatus("KM da rota aplicado: " + brNumber(km) + " km. Total atual: " + money(data.total) + ".", "ok");
+    setTowStatus("KM da rota aplicado: " + brNumber(km) + " km. Pedágios: " + money(data.pedagioTotal || 0) + ". Total atual: " + money(data.total) + ".", "ok");
   }
 
   function applyTowTotalToPrice() {
@@ -2659,7 +2686,7 @@ Rota: ${url}`;
     const timeline = (call.timeline || []).slice().reverse().slice(0, 8).map((t) => `<div class="timeline-item"><b>${esc(t.by || t.user || "Sistema")}</b><br>${esc(t.text || t.acao || "")}<br><small>${dateTime(t.at || t.dt)}</small></div>`).join("") || `<p class="muted small">Sem auditoria operacional.</p>`;
     const tow = call.towPricing || call.deslocamentoGuincho || {};
     const towText = tow.ativo
-      ? `<p class="small"><b>${esc(tow.tipoLabel || tow.tipo || "Guincho")}</b><br>KM ida: <b>${esc(String(tow.kmTotal || 0).replace(".", ","))}</b> · Franquia: <b>${esc(String(tow.franquiaKm || 0).replace(".", ","))}</b><br>Saída: <b>${money(tow.valorSaida || 0)}</b> · KM: <b>${money(tow.valorKmAdicional || 0)}</b> · Desc.: <b>${esc(String(tow.descontoPct || 0).replace(".", ","))}%</b><br>Total guincho: <b>${money(tow.total || 0)}</b>${tow.obs ? "<br>Obs.: " + esc(tow.obs) : ""}</p>`
+      ? `<p class="small"><b>${esc(tow.tipoLabel || tow.tipo || "Guincho")}</b><br>KM ida: <b>${esc(String(tow.kmTotal || tow.kmIda || 0).replace(".", ","))}</b> · KM cobrado: <b>${esc(String(tow.kmCobradoTotal ?? tow.kmCobrado ?? 0).replace(".", ","))}</b> · Franquia: <b>${esc(String(tow.franquiaKm || 0).replace(".", ","))}</b><br>Saída: <b>${money(tow.valorSaida || 0)}</b> · KM: <b>${money(tow.valorKmAdicional || 0)}</b> · Desc.: <b>${esc(String(tow.descontoPct || 0).replace(".", ","))}%</b><br>Pedágios: <b>${money(tow.pedagioTotal || tow.valorPedagios || 0)}</b> · Total guincho: <b>${money(tow.total || 0)}</b>${tow.obs ? "<br>Obs.: " + esc(tow.obs) : ""}</p>`
       : `<p class="muted small">Sem precificação de guincho vinculada.</p>`;
     const publicActive = call.publicToken && !call.publicRevoked;
     const publicLink = publicActive ? publicClientUrl(call.publicToken) : "";
@@ -4353,7 +4380,7 @@ Rota: ${url}`;
     if ($("btnReadRouteLink")) $("btnReadRouteLink").onclick = readSharedRouteLink;
     if ($("btnTowUseRouteKm")) $("btnTowUseRouteKm").onclick = applyRouteKmToTowPricing;
     if ($("btnTowApplyToPrice")) $("btnTowApplyToPrice").onclick = applyTowTotalToPrice;
-    ["callTowActive", "callTowKm", "callTowFranchiseKm", "callTowBaseOut", "callTowKmValue", "callTowDiscountPct", "callTowRoundTrip", "callTowSubtractFranchise", "callTowNotes"].forEach((id) => {
+    ["callTowActive", "callTowKm", "callTowFranchiseKm", "callTowBaseOut", "callTowKmValue", "callTowDiscountPct", "callTowTollOneWay", "callTowRoundTrip", "callTowSubtractFranchise", "callTowTollRoundTrip", "callTowNotes"].forEach((id) => {
       if ($(id)) $(id).oninput = calculateTowPricing;
       if ($(id)) $(id).onchange = calculateTowPricing;
     });
