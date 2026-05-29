@@ -4,7 +4,7 @@
   const { $, esc, parseMoney, toast, statusClass, routeKm, mapsRouteUrl, statusKey, statusLabel, isFinalStatus, setupCollapsiblePanels, pointFrom } = window.JM.utils;
   const { auth, db, arrayUnion, getRealtimeDb, rtdbKey } = window.JM.firebase;
   const cfg = window.JM_CONFIG || {};
-  const DRIVER_FLOW_VERSION = "jm-v27-mapa-ia-fechamento";
+  const DRIVER_FLOW_VERSION = "jm-v28-ia-seguradoras-checklist-tema";
   const state = { user: null, profile: null, calls: {}, vehicles: {}, expenses: {}, settings: {}, selectedCallId: "", driverLivePoint: null };
   const unsubscribers = [];
   let driverLocationWatchId = null;
@@ -43,8 +43,54 @@
     { key: "truck_bed", label: "Plataforma/guincho" },
     { key: "other", label: "Outro ponto" }
   ];
+  const ACCESSORY_GROUPS = [
+    {
+      title: "Parte externa do veículo",
+      items: [
+        ["driverMirror", "Retrovisor motorista"],
+        ["passengerMirror", "Retrovisor passageiro"],
+        ["fogLight", "Farol de milha"],
+        ["alloyWheels", "Rodas de liga leve"],
+        ["steelWheels", "Rodas de aço"],
+        ["hubcaps", "Calotas"],
+        ["antenna", "Antena"],
+        ["trunkLid", "Porta-malas"],
+        ["fireExtinguisher", "Extintor"],
+        ["spareTire", "Estepe"],
+        ["warningTriangle", "Triângulo"],
+        ["jack", "Macaco"]
+      ]
+    },
+    {
+      title: "Painel / porta / documentos",
+      items: [
+        ["ignitionKey", "Chave de ignição"],
+        ["tachograph", "Tacógrafo"],
+        ["multimedia", "Multimídia"],
+        ["cdPlayer", "CD Player"],
+        ["dvdPlayer", "DVD Player"],
+        ["radioTransmitter", "Rádio transmissor"],
+        ["documents", "Documentos"],
+        ["speaker", "Auto falante"]
+      ]
+    },
+    {
+      title: "Parte interna do veículo",
+      items: [
+        ["amplifier", "Amplificador"],
+        ["console", "Console"],
+        ["floorMats", "Tapetes"],
+        ["rearCover", "Tampão traseiro"],
+        ["driverSeat", "Banco dianteiro motorista"],
+        ["passengerSeat", "Banco dianteiro passageiro"],
+        ["cabinBed", "Cama gabinado"],
+        ["alarm", "Alarme"]
+      ]
+    }
+  ];
   let signaturePad = null;
   let selectedDamageParts = new Set();
+  const ACCESSORY_STATUS_LABELS = { sim: "S", nao: "N", avaria: "A" };
 
   function friendlyAuthError(err) {
     const code = err && err.code || "";
@@ -608,6 +654,58 @@
       updateDamageSummary();
     });
     updateDamageSummary();
+  }
+
+  function setupAccessoryChecklist() {
+    const box = $("proofAccessoriesGrid");
+    if (!box) return;
+    box.innerHTML = ACCESSORY_GROUPS.map((group) => `
+      <div class="proof-accessory-group">
+        <h3>${esc(group.title)}</h3>
+        ${group.items.map(([key, label]) => `
+          <div class="proof-accessory-row">
+            <span>${esc(label)}</span>
+            <select id="proofAccessory_${esc(key)}" aria-label="${esc(label)}">
+              <option value="">Não informado</option>
+              <option value="sim">S</option>
+              <option value="nao">N</option>
+              <option value="avaria">A</option>
+            </select>
+          </div>
+        `).join("")}
+      </div>
+    `).join("");
+  }
+
+  function accessoryChecklistPayload() {
+    return ACCESSORY_GROUPS.map((group) => ({
+      title: group.title,
+      items: group.items.map(([key, label]) => {
+        const value = $("proofAccessory_" + key) ? $("proofAccessory_" + key).value : "";
+        return { key, label, value, shortLabel: ACCESSORY_STATUS_LABELS[value] || "" };
+      })
+    }));
+  }
+
+  function technicalInspectionPayload() {
+    return {
+      fuelLevel: $("proofFuelLevel") ? $("proofFuelLevel").value : "",
+      odometer: $("proofOdometer") ? $("proofOdometer").value.trim() : "",
+      tireCondition: $("proofTireCondition") ? $("proofTireCondition").value : "",
+      keyDocument: $("proofKeyDocument") ? $("proofKeyDocument").value : "",
+      vehicleLoaded: $("proofVehicleLoaded") ? $("proofVehicleLoaded").value : "",
+      easyRemoval: $("proofEasyRemoval") ? $("proofEasyRemoval").value : "",
+      technicalNotes: $("proofVehicleTechnicalNotes") ? $("proofVehicleTechnicalNotes").value.trim() : "",
+      pickupResponsible: {
+        name: $("proofPickupResponsibleName") ? $("proofPickupResponsibleName").value.trim() : "",
+        document: $("proofPickupResponsibleDoc") ? $("proofPickupResponsibleDoc").value.trim() : ""
+      },
+      deliveryResponsible: {
+        name: $("proofDeliveryResponsibleName") ? $("proofDeliveryResponsibleName").value.trim() : "",
+        document: $("proofDeliveryResponsibleDoc") ? $("proofDeliveryResponsibleDoc").value.trim() : ""
+      },
+      accessories: accessoryChecklistPayload()
+    };
   }
 
   function damageAssessmentPayload() {
@@ -1243,6 +1341,7 @@
       entrega: { status: $("proofStageEntrega").value, label: "Entrega", justificativa: $("proofStageEntregaJustification") ? $("proofStageEntregaJustification").value.trim() : "" },
       finalizacao: { status: $("proofStageFinalizacao").value, label: "Finalização", justificativa: $("proofStageFinalizacaoJustification") ? $("proofStageFinalizacaoJustification").value.trim() : "" },
       notes: $("proofChecklistNotes").value.trim(),
+      vehicleInspection: technicalInspectionPayload(),
       damageAssessment: damageAssessmentPayload(),
       updatedAt: new Date().toISOString(),
       updatedBy: state.user.uid
@@ -1415,6 +1514,7 @@
   window.JM.motorista = { setStatus, acceptCall, openRouteForCall, openExternalRouteForCall, startRouteForCall, startLocationForCall: startDriverPhoneLocation, stopDriverPhoneLocation, state };
   setupSignaturePad();
   setupDamageDiagram();
+  setupAccessoryChecklist();
   applyMobileGpsVisibility();
   if (typeof setupCollapsiblePanels === "function") {
     setupCollapsiblePanels(document, { collapseOnMobile: true, openFirst: 1 });

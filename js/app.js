@@ -10,7 +10,7 @@
   const { auth, secondaryAuth, db, ts, arrayUnion, emailIsAdmin, getRealtimeDb, rtdbKey } = window.JM.firebase;
   const cfg = window.JM_CONFIG || {};
   const SYSTEM_SIGNATURE = "";
-  const LOGIN_FLOW_VERSION = "jm-v27-mapa-ia-fechamento";
+  const LOGIN_FLOW_VERSION = "jm-v28-ia-seguradoras-checklist-tema";
   let trackerTimer = null;
   let trackerBusy = false;
   let mapRefreshTimer = null;
@@ -2375,6 +2375,25 @@ Rota: ${url}`;
       const row = checklist[stage] || {};
       return `<li><b>${esc(PROOF_STAGE_LABELS[stage] || stage)}:</b> ${esc(row.status || "pendente")}${row.justificativa ? `<br><span class="muted">Justificativa: ${esc(row.justificativa)}</span>` : ""}</li>`;
     }).join("");
+    const inspection = checklist.vehicleInspection || {};
+    const accessoryRows = Array.isArray(inspection.accessories) ? inspection.accessories.flatMap((group) => (group.items || []).map((item) => ({
+      group: group.title || "",
+      label: item.label || item.key || "",
+      value: item.shortLabel || item.value || ""
+    }))).filter((item) => item.value) : [];
+    const inspectionHtml = `<h2>Ficha técnica e acessórios</h2>
+      <div class="report-context">
+        <div><b>Combustível</b><br>${esc(inspection.fuelLevel || "-")}</div>
+        <div><b>Odômetro</b><br>${esc(inspection.odometer || "-")}</div>
+        <div><b>Pneus</b><br>${esc(inspection.tireCondition || "-")}</div>
+        <div><b>Chave/documento</b><br>${esc(inspection.keyDocument || "-")}</div>
+        <div><b>Veículo carregado</b><br>${esc(inspection.vehicleLoaded || "-")}</div>
+        <div><b>Fácil remoção</b><br>${esc(inspection.easyRemoval || "-")}</div>
+      </div>
+      <p><b>Responsável retirada:</b> ${esc(inspection.pickupResponsible && inspection.pickupResponsible.name || "-")} ${esc(inspection.pickupResponsible && inspection.pickupResponsible.document || "")}<br>
+      <b>Responsável entrega:</b> ${esc(inspection.deliveryResponsible && inspection.deliveryResponsible.name || "-")} ${esc(inspection.deliveryResponsible && inspection.deliveryResponsible.document || "")}</p>
+      ${inspection.technicalNotes ? `<p><b>Observações técnicas:</b><br>${esc(inspection.technicalNotes)}</p>` : ""}
+      ${accessoryRows.length ? `<table><thead><tr><th>Grupo</th><th>Item</th><th>S/N/A</th></tr></thead><tbody>${accessoryRows.map((item) => `<tr><td>${esc(item.group)}</td><td>${esc(item.label)}</td><td>${esc(item.value)}</td></tr>`).join("")}</tbody></table>` : `<p class="muted">Sem acessórios marcados.</p>`}`;
     const stageEvidenceHtml = `
       <section><h2>Antes do carregamento</h2><div class="grid">${["front", "rear", "right", "left", "dashboard"].map(photoBlock).join("")}</div><p>${esc(checklist.retirada && checklist.retirada.justificativa || "")}</p></section>
       <section><h2>Carregado no caminhão</h2><div class="grid">${photoBlock("load_after")}</div><p>${esc(checklist.carregamento && checklist.carregamento.justificativa || "")}</p></section>
@@ -2386,7 +2405,7 @@ Rota: ${url}`;
     const headerHtml = `<header class="report-header"><div><h1>Laudo técnico de atendimento</h1><p class="muted">${esc(company.nome || "JM Guinchos")} · ${esc(company.cidadeBase || "")} · ${esc(company.telefoneOperacional || "")}</p></div><div class="report-stamp"><b>${esc(call.protocolo || id)}</b><span>${dateTime(new Date().toISOString())}</span></div></header>`;
     const win = window.open("", "_blank");
     if (!win) return toast("O navegador bloqueou a janela de provas.", "danger");
-    win.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Laudo ${esc(call.protocolo || id)}</title><style>body{font-family:Arial,sans-serif;padding:18px;color:#111827}.report-header{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;border-bottom:2px solid #0f766e;padding-bottom:12px;margin-bottom:14px}.report-header h1{margin:0 0 4px;font-size:24px}.report-stamp{text-align:right;border:1px solid #d1d5db;border-radius:8px;padding:10px;min-width:160px}.report-stamp span{display:block;color:#64748b;font-size:12px;margin-top:4px}h2{font-size:15px;margin:18px 0 8px;color:#0f766e}.muted{color:#64748b}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.photo{break-inside:avoid;border:1px solid #d1d5db;border-radius:8px;padding:8px;margin:6px 0;background:#fff}.photo img{width:100%;height:118px;object-fit:cover;object-position:center;margin-top:6px;border-radius:6px}.signature-img,.photo .signature-img{width:100%;max-width:360px;height:92px;object-fit:contain;background:#fff;border:1px solid #d1d5db;border-radius:6px}.missing{color:#991b1b;background:#fef2f2}.report-context{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.report-context div{border:1px solid #e5e7eb;border-radius:8px;padding:8px}@media print{button{display:none}.photo{page-break-inside:avoid}.grid{grid-template-columns:repeat(4,minmax(0,1fr))}.photo img{height:92px}.signature-img{height:82px}body{padding:8mm}.report-header{position:running(reportHeader)}}@page{margin:10mm}</style></head><body>${headerHtml}<div class="report-context"><div><b>Cliente</b><br>${esc(call.cliente || "-")}</div><div><b>Seguradora</b><br>${esc(call.insurance || call.source || "-")}</div><div><b>Placa</b><br>${esc(call.customerPlate || "-")}</div></div><h2>Checklist por etapa</h2><ul>${checklistHtml}</ul><p>${esc(checklist.notes || "")}</p>${damageHtml}${stageEvidenceHtml}<h2>Assinatura ou justificativa por fase</h2><div class="grid">${phaseSigHtml}</div><h2>Assinatura geral de compatibilidade</h2>${sigHtml}<h2>Fotos gerais</h2>${photoHtml}${SYSTEM_SIGNATURE ? `<p class="muted">${SYSTEM_SIGNATURE}</p>` : ""}</body></html>`);
+    win.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Laudo ${esc(call.protocolo || id)}</title><style>body{font-family:Arial,sans-serif;padding:18px;color:#111827}.report-header{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;border-bottom:2px solid #0f766e;padding-bottom:12px;margin-bottom:14px}.report-header h1{margin:0 0 4px;font-size:24px}.report-stamp{text-align:right;border:1px solid #d1d5db;border-radius:8px;padding:10px;min-width:160px}.report-stamp span{display:block;color:#64748b;font-size:12px;margin-top:4px}h2{font-size:15px;margin:18px 0 8px;color:#0f766e}.muted{color:#64748b}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.photo{break-inside:avoid;border:1px solid #d1d5db;border-radius:8px;padding:8px;margin:6px 0;background:#fff}.photo img{width:100%;height:118px;object-fit:cover;object-position:center;margin-top:6px;border-radius:6px}.signature-img,.photo .signature-img{width:100%;max-width:360px;height:92px;object-fit:contain;background:#fff;border:1px solid #d1d5db;border-radius:6px}.missing{color:#991b1b;background:#fef2f2}.report-context{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.report-context div{border:1px solid #e5e7eb;border-radius:8px;padding:8px}table{width:100%;border-collapse:collapse;margin:8px 0}th,td{border:1px solid #e5e7eb;padding:6px;text-align:left;font-size:12px}@media print{button{display:none}.photo{page-break-inside:avoid}.grid{grid-template-columns:repeat(4,minmax(0,1fr))}.photo img{height:92px}.signature-img{height:82px}body{padding:8mm}.report-header{position:running(reportHeader)}}@page{margin:10mm}</style></head><body>${headerHtml}<div class="report-context"><div><b>Cliente</b><br>${esc(call.cliente || "-")}</div><div><b>Seguradora</b><br>${esc(call.insurance || call.source || "-")}</div><div><b>Placa</b><br>${esc(call.customerPlate || "-")}</div></div><h2>Checklist por etapa</h2><ul>${checklistHtml}</ul><p>${esc(checklist.notes || "")}</p>${inspectionHtml}${damageHtml}${stageEvidenceHtml}<h2>Assinatura ou justificativa por fase</h2><div class="grid">${phaseSigHtml}</div><h2>Assinatura geral de compatibilidade</h2>${sigHtml}<h2>Fotos gerais</h2>${photoHtml}${SYSTEM_SIGNATURE ? `<p class="muted">${SYSTEM_SIGNATURE}</p>` : ""}</body></html>`);
     win.document.close();
   }
 
@@ -2466,6 +2485,7 @@ Rota: ${url}`;
       timelinePublic: publicTimeline(call),
       proofsPublic: publicProofs(call),
       damageAssessmentPublic: call.publicProofsEnabled ? (call.damageAssessment || call.proofChecklist && call.proofChecklist.damageAssessment || null) : null,
+      vehicleInspectionPublic: call.publicProofsEnabled ? (call.proofChecklist && call.proofChecklist.vehicleInspection || null) : null,
       customerSignaturePublic: call.publicProofsEnabled ? (call.customerSignature || null) : null,
       phaseSignaturesPublic: call.publicProofsEnabled ? (call.phaseSignatures || {}) : {},
       reportEnabled: call.publicReportEnabled !== false,
@@ -2850,14 +2870,22 @@ Rota: ${url}`;
     setValue("callSource", "Seguradora");
     setValue("callInsurance", normalized.insurance || row.sourceName || row.source || "");
     setValue("callInsuranceProtocol", normalized.insuranceProtocol || row.protocol || row.externalId || "");
+    setValue("callType", normalized.serviceType || "Seguradora");
     setValue("callClaim", normalized.claimNumber || "");
+    setValue("callPolicy", normalized.policyNumber || normalized.insuranceProtocol || row.protocol || "");
     setValue("callPolicyNumber", normalized.policyNumber || "");
     setValue("callCustomerPlate", normalized.customerPlate || "");
+    setValue("callCustomerVehicle", [normalized.customerVehicle, normalized.vehicleColor, normalized.vehicleYear].filter(Boolean).join(" / "));
     setValue("callPrice", normalized.amount || "");
     setValue("callSlaLimit", normalized.slaLimitAt || "");
     setValue("callOriginLabel", normalized.originText || "");
     setValue("callDestLabel", normalized.destinationText || "");
-    setValue("callNotes", normalized.rawText || row.payloadText || row.payload && row.payload.text || "");
+    setValue("callNotes", [normalized.notes, normalized.questionSummary, normalized.tariffSummary, normalized.rawText || row.payloadText || row.payload && row.payload.text || ""].filter(Boolean).join("\n\n"));
+    if (normalized.totalRouteKm && $("callTowKm")) {
+      setValue("callTowKm", String(normalized.totalRouteKm).replace(".", ","));
+      if ($("callTowActive")) $("callTowActive").checked = true;
+      calculateTowPricing();
+    }
     state.pendingIntegrationId = id;
     db.collection("integrationInbox").doc(id).set({
       status: "em_tratamento",
@@ -3246,14 +3274,101 @@ Rota: ${url}`;
     }
   }
 
-  function aiField(text, labels) {
-    const lines = String(text || "").split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
-    for (const label of labels) {
-      const re = new RegExp("^\\s*" + label + "\\s*[:\\-]\\s*(.+)$", "i");
-      const found = lines.find((line) => re.test(line));
-      if (found) return found.replace(re, "$1").trim();
+  function aiLines(text) {
+    return String(text || "")
+      .replace(/\t+/g, " ")
+      .replace(/\u00a0/g, " ")
+      .split(/\r?\n/)
+      .map((line) => line.replace(/\s+/g, " ").trim())
+      .filter(Boolean);
+  }
+
+  function aiKey(text) {
+    return String(text || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[º°]/g, " ")
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
+  }
+
+  const AI_LABELS = [
+    "item de cobertura", "situação", "situacao", "valor total", "percurso total", "distância da base", "distancia da base",
+    "técnico", "tecnico", "ordem de serviço", "ordem de servico", "cliente", "solicitante", "beneficiário", "beneficiario",
+    "telefone", "telefone do beneficiário", "telefone do beneficiario", "veículo", "veiculo", "placa", "ano", "cor do veículo",
+    "cor do veiculo", "causa", "observação", "observacao", "observações", "observacoes", "questionário", "questionario",
+    "endereço", "endereco", "endereço de acionamento", "endereco de acionamento", "origem", "destino", "tarifas",
+    "perguntas", "valores", "serviço", "servico", "protocolo", "previsão", "previsao", "data agendamento",
+    "nome / nome fantasia", "nome fantasia", "tipo de serviço", "tipo de servico", "valor", "viatura próxima",
+    "viatura proxima", "combustível", "combustivel"
+  ];
+
+  function aiIsLabel(line, labels) {
+    const key = aiKey(line).replace(/\b\d+(?:[,.]\d+)?\s*km\b/g, "").trim();
+    return (labels || []).some((label) => {
+      const labelKey = aiKey(label);
+      return key === labelKey || key.startsWith(labelKey + " ");
+    });
+  }
+
+  function aiMeaningfulInlineValue(value) {
+    const clean = String(value || "").replace(/^[:\-–—]\s*/, "").trim();
+    if (!clean) return "";
+    if (/^\(?\s*\d+(?:[.,]\d+)?\s*km\s*\)?$/i.test(clean)) return "";
+    return clean;
+  }
+
+  function aiInlineValue(line, labels) {
+    const raw = String(line || "").trim();
+    const colon = raw.match(/[:：]\s*(.+)$/);
+    for (const label of labels || []) {
+      const labelKey = aiKey(label);
+      const key = aiKey(raw);
+      if (!key.startsWith(labelKey)) continue;
+      if (colon) return aiMeaningfulInlineValue(colon[1]);
+      if (key === labelKey) return "";
+      const words = String(label || "").split(/\s+/).filter(Boolean);
+      const rest = raw.split(/\s+/).slice(words.length).join(" ");
+      const value = aiMeaningfulInlineValue(rest);
+      if (value && aiKey(value) !== labelKey) return value;
     }
     return "";
+  }
+
+  function aiValue(text, labels, stopLabels) {
+    const lines = Array.isArray(text) ? text : aiLines(text);
+    const stops = stopLabels || AI_LABELS;
+    for (let i = 0; i < lines.length; i++) {
+      if (!aiIsLabel(lines[i], labels)) continue;
+      const inline = aiInlineValue(lines[i], labels);
+      if (inline) return inline;
+      for (let j = i + 1; j < Math.min(lines.length, i + 6); j++) {
+        const candidate = lines[j];
+        if (aiIsLabel(candidate, stops)) break;
+        if (/^(Finalizado|Em andamento|Pendente|\+|−|-|Leaflet|©)/i.test(candidate)) continue;
+        return candidate;
+      }
+    }
+    return "";
+  }
+
+  function aiBlock(text, startLabels, stopLabels) {
+    const lines = Array.isArray(text) ? text : aiLines(text);
+    const out = [];
+    for (let i = 0; i < lines.length; i++) {
+      if (!aiIsLabel(lines[i], startLabels)) continue;
+      const inline = aiInlineValue(lines[i], startLabels);
+      if (inline) out.push(inline);
+      for (let j = i + 1; j < lines.length; j++) {
+        const candidate = lines[j];
+        if (aiIsLabel(candidate, stopLabels || AI_LABELS)) break;
+        if (/^(\+|−|Leaflet|©|Tarifa\s+|Valor Total\s*$)/i.test(candidate)) continue;
+        out.push(candidate);
+      }
+      break;
+    }
+    return out.join("\n").trim();
   }
 
   function aiMatch(text, regex) {
@@ -3261,42 +3376,221 @@ Rota: ${url}`;
     return m ? String(m[1] || m[0] || "").trim() : "";
   }
 
+  function aiMoneyMatches(text) {
+    return Array.from(String(text || "").matchAll(/(?:R\$\s*)?(\d{1,3}(?:\.\d{3})*,\d{2}|\d{1,6}[.,]\d{2})/g)).map((m) => m[0]);
+  }
+
   function aiAmount(text) {
-    const found = aiMatch(text, /(?:valor|total|pre[cç]o|R\$)\s*[:\-]?\s*(?:R\$\s*)?(\d{1,3}(?:\.\d{3})*,\d{2}|\d+(?:[.,]\d{2})?)/i);
-    return found ? parseMoney(found) : 0;
+    const raw = String(text || "");
+    const explicit = aiMatch(raw, /(?:valor\s+total|valor|total)\s*[:\-]?\s*(?:R\$\s*)?(\d{1,3}(?:\.\d{3})*,\d{2}|\d{1,6}[.,]\d{2})/i);
+    if (explicit) return parseMoney(explicit);
+    const monies = aiMoneyMatches(raw);
+    return monies.length ? parseMoney(monies[0]) : 0;
+  }
+
+  function aiMoneyNear(lines, labels) {
+    for (let i = 0; i < lines.length; i++) {
+      if (!aiIsLabel(lines[i], labels)) continue;
+      const candidates = [aiInlineValue(lines[i], labels), lines[i - 1], lines[i + 1]].filter(Boolean);
+      for (const candidate of candidates) {
+        if (!/R\$/i.test(candidate)) continue;
+        const money = aiMoneyMatches(candidate)[0];
+        if (money) return parseMoney(money);
+      }
+      for (const candidate of candidates) {
+        const money = aiMoneyMatches(candidate)[0];
+        if (money) return parseMoney(money);
+      }
+    }
+    return 0;
+  }
+
+  function aiKmNear(lines, labels) {
+    for (let i = 0; i < lines.length; i++) {
+      if (!aiIsLabel(lines[i], labels)) continue;
+      const candidates = [aiInlineValue(lines[i], labels), lines[i - 1], lines[i + 1]].filter(Boolean);
+      for (const candidate of candidates) {
+        const m = String(candidate).match(/(\d+(?:[.,]\d+)?)\s*km/i);
+        if (m) return parseFloat(String(m[1]).replace(",", "."));
+      }
+    }
+    return 0;
+  }
+
+  function aiKmValueFromLine(line) {
+    const m = String(line || "").match(/(\d+(?:[.,]\d+)?)\s*km/i);
+    return m ? parseFloat(String(m[1]).replace(",", ".")) : 0;
+  }
+
+  function aiMetricKm(lines, labels, nextValueStolenByLabels) {
+    const stealers = nextValueStolenByLabels || [];
+    for (let i = 0; i < lines.length; i++) {
+      if (!aiIsLabel(lines[i], labels)) continue;
+      const inline = aiKmValueFromLine(aiInlineValue(lines[i], labels));
+      if (inline) return inline;
+      const next = aiKmValueFromLine(lines[i + 1]);
+      const previous = aiKmValueFromLine(lines[i - 1]);
+      if (next && !(lines[i + 2] && aiIsLabel(lines[i + 2], stealers))) return next;
+      if (previous) return previous;
+      if (next) return next;
+    }
+    return 0;
+  }
+
+  function aiDetectInsurance(raw, lines) {
+    if (/maxpar/i.test(raw)) return "Maxpar";
+    if (/amparo\s+assist/i.test(raw)) return "Amparo Assistência";
+    if (/veniti/i.test(raw)) return "Veniti";
+    return aiValue(lines, ["seguradora", "assistência", "assistencia", "cliente"]) || "";
+  }
+
+  function aiQuestions(lines) {
+    const start = lines.findIndex((line) => aiIsLabel(line, ["questionário", "questionario", "perguntas"]));
+    if (start < 0) return [];
+    const questions = [];
+    let current = null;
+    for (let i = start + 1; i < lines.length; i++) {
+      const line = lines[i];
+      if (aiIsLabel(line, ["endereço", "endereco", "tarifas", "valores"])) break;
+      if (!line || /^(\+|−|-|Leaflet|©)$/i.test(line)) continue;
+      if (/\?$/.test(line)) {
+        if (current) questions.push(current);
+        current = { question: line, answer: "" };
+      } else if (current) {
+        current.answer = [current.answer, line].filter(Boolean).join(" ");
+      }
+    }
+    if (current) questions.push(current);
+    return questions;
+  }
+
+  function aiTariffs(lines) {
+    const start = lines.findIndex((line) => aiIsLabel(line, ["tarifas", "valores"]));
+    if (start < 0) return [];
+    const rows = [];
+    for (let i = start + 1; i < lines.length; i++) {
+      const line = lines[i];
+      if (/^(total|valor total|beneficiário pagará|beneficiario pagara)/i.test(line)) continue;
+      if (!/(saida|saída|km|hora|cobertura|guincho|reboque|munck)/i.test(line)) continue;
+      const monies = aiMoneyMatches(line);
+      const plainNumbers = Array.from(line.matchAll(/\b\d{1,3}(?:\.\d{3})*,\d{2}\b|\b\d+(?:[.,]\d{1,2})\b/g)).map((m) => m[0]);
+      const totalText = monies[monies.length - 1] || plainNumbers[plainNumbers.length - 1] || "";
+      const unitText = monies[0] || (plainNumbers.length > 1 ? plainNumbers[plainNumbers.length - 2] : "");
+      let quantityText = plainNumbers.length > 2 ? plainNumbers[plainNumbers.length - 3] : "";
+      if (/R\$/i.test(line) && monies.length >= 2) {
+        const betweenMoney = line.slice(line.indexOf(monies[0]) + monies[0].length, line.lastIndexOf(monies[monies.length - 1]));
+        const qtyMatch = betweenMoney.match(/\b(\d+(?:[.,]\d+)?)\b/);
+        if (qtyMatch) quantityText = qtyMatch[1];
+      }
+      const description = line
+        .replace(/R\$\s*/gi, "")
+        .replace(/\d{1,3}(?:\.\d{3})*,\d{2}|\d+(?:[.,]\d{1,2})/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+      rows.push({
+        description: description || "Tarifa",
+        quantity: quantityText ? parseFloat(quantityText.replace(".", "").replace(",", ".")) : 1,
+        unitAmount: unitText ? parseMoney(unitText) : 0,
+        amount: totalText ? parseMoney(totalText) : 0,
+        raw: line
+      });
+    }
+    return rows;
+  }
+
+  function aiBuildInsuranceCall(raw) {
+    const lines = aiLines(raw);
+    const insurance = aiDetectInsurance(raw, lines);
+    const protocol = aiValue(lines, ["protocolo", "ordem de serviço", "ordem de servico", "os"]) ||
+      aiMatch(raw, /\b([A-Z]{2,}\d{4,}(?:\/\d+){0,3}|A\d{8,}\/\d+)\b/i);
+    const beneficiary = aiValue(lines, ["beneficiário", "beneficiario", "nome / nome fantasia", "nome fantasia"]);
+    const requester = aiValue(lines, ["solicitante"]);
+    const billingClient = aiValue(lines, ["cliente"]) || insurance;
+    const client = beneficiary || billingClient || requester;
+    const phone = aiValue(lines, ["telefone do beneficiário", "telefone do beneficiario", "telefone"]) ||
+      aiMatch(raw, /(?:\+?55\s*)?\(?\d{2}\)?\s*9?\d{4}[-\s]?\d{4}/);
+    const vehicle = aiValue(lines, ["veículo", "veiculo"]);
+    const plate = plateKey(aiValue(lines, ["placa"]) || aiMatch(raw, /\b([A-Z]{3}[-\s]?[0-9][A-Z0-9][0-9]{2}|[A-Z]{3}[-\s]?[0-9]{4})\b/i));
+    const year = aiValue(lines, ["ano"]);
+    const color = aiValue(lines, ["cor do veículo", "cor do veiculo"]);
+    const cause = aiValue(lines, ["causa"]);
+    const serviceType = aiValue(lines, ["tipo de serviço", "tipo de servico", "serviço", "servico"]) || "Guincho";
+    const externalStatus = aiValue(lines, ["situação", "situacao"]) || (/finalizado/i.test(raw) ? "Finalizado" : "");
+    const origin = aiBlock(lines, ["origem"], ["destino", "tarifas", "valores", "perguntas", "questionário", "questionario"]) ||
+      aiBlock(lines, ["endereço de acionamento", "endereco de acionamento"], ["origem", "destino", "tarifas", "valores", "perguntas"]);
+    const destination = aiBlock(lines, ["destino"], ["tarifas", "valores", "perguntas", "questionário", "questionario"]);
+    const observations = aiBlock(lines, ["observação", "observacao", "observações", "observacoes"], ["tipo de serviço", "tipo de servico", "endereço", "endereco", "perguntas", "valores", "tarifas"]);
+    const questions = aiQuestions(lines);
+    const tariffs = aiTariffs(lines);
+    const totalRouteKm = aiMetricKm(lines, ["percurso total"], ["distância da base", "distancia da base", "viatura próxima", "viatura proxima"]);
+    const baseDistanceKm = aiMetricKm(lines, ["distância da base", "distancia da base", "viatura próxima", "viatura proxima"]);
+    const amount = aiMoneyNear(lines, ["valor total", "valor"]) || aiAmount(raw) || tariffs.reduce((sum, row) => sum + Number(row.amount || 0), 0);
+    const mapLinks = Array.from(raw.matchAll(/https?:\/\/\S+/gi)).map((m) => m[0].replace(/[),.;]+$/, ""));
+    const notes = [
+      requester ? "Solicitante: " + requester : "",
+      billingClient && billingClient !== insurance ? "Cliente/associado/pagador: " + billingClient : "",
+      externalStatus ? "Status no portal: " + externalStatus : "",
+      cause ? "Causa: " + cause : "",
+      observations ? "Observações do acionamento: " + observations : "",
+      questions.length ? "Perguntas da seguradora:\n" + questions.map((q) => "- " + q.question + " " + q.answer).join("\n") : "",
+      tariffs.length ? "Tarifas:\n" + tariffs.map((row) => "- " + row.raw).join("\n") : ""
+    ].filter(Boolean).join("\n\n");
+    return {
+      client,
+      beneficiary,
+      requester,
+      billingClient,
+      phone,
+      insurance,
+      protocol,
+      sourceName: insurance || billingClient || "Assistente IA",
+      serviceType,
+      origin,
+      destination,
+      plate,
+      vehicle,
+      year,
+      color,
+      cause,
+      amount,
+      totalRouteKm,
+      baseDistanceKm,
+      questions,
+      tariffs,
+      mapLinks,
+      notes,
+      externalStatus,
+      rawText: raw
+    };
   }
 
   function buildAiDrafts(text) {
     const raw = String(text || "").trim();
     if (!raw) return [];
     const lower = statusLower(raw);
-    const amount = aiAmount(raw);
-    const plate = plateKey(aiField(raw, ["placa", "veiculo", "veículo"]) || aiMatch(raw, /\b([A-Z]{3}[0-9][A-Z0-9][0-9]{2}|[A-Z]{3}[0-9]{4})\b/i));
-    const phone = aiField(raw, ["telefone", "whatsapp", "celular"]) || aiMatch(raw, /(?:\+?55\s*)?\(?\d{2}\)?\s*9?\d{4}[-\s]?\d{4}/);
-    const client = aiField(raw, ["cliente", "nome", "segurado", "condutor"]) || aiMatch(raw, /cliente\s*[:\-]\s*([^\n]+)/i);
-    const insurance = aiField(raw, ["seguradora", "assistencia", "assistência", "origem"]) || (/segur/i.test(lower) ? "Seguradora" : "");
-    const protocol = aiField(raw, ["protocolo", "acionamento", "os", "ordem"]) || aiMatch(raw, /(?:protocolo|acionamento|os)\s*[:\-]?\s*([A-Z0-9./-]+)/i);
-    const origin = aiField(raw, ["origem", "local", "endereco", "endereço", "retirada"]);
-    const destination = aiField(raw, ["destino", "entrega", "base"]);
-    const claim = aiField(raw, ["sinistro", "claim"]);
-    const policy = aiField(raw, ["apolice", "apólice"]);
     const drafts = [];
-    if (/chamado|guincho|sinistro|apolice|apólice|origem|destino|retirada|seguradora|assist[eê]ncia/.test(lower)) {
+    const callData = aiBuildInsuranceCall(raw);
+    const insuranceLike = /maxpar|amparo|veniti|assist[eê]ncia|seguradora|protocolo|ordem de servi[cç]o|benefici[aá]rio|acionamento|origem|destino|tarifas|perguntas/i.test(raw);
+    if (insuranceLike || callData.protocol || callData.origin || callData.destination) {
       drafts.push({
         kind: "call",
-        title: "Rascunho de chamado",
+        title: "Chamado oficial de seguradora",
         rawText: raw,
-        data: { client, phone, insurance, protocol, origin, destination, plate, claim, policy, amount }
+        data: callData
       });
     }
+    const amount = callData.amount || aiAmount(raw);
+    const plate = callData.plate || plateKey(aiValue(raw, ["placa", "veículo", "veiculo"]) || aiMatch(raw, /\b([A-Z]{3}[0-9][A-Z0-9][0-9]{2}|[A-Z]{3}[0-9]{4})\b/i));
+    const client = callData.client || aiValue(raw, ["cliente", "nome", "segurado", "condutor"]);
+    const insurance = callData.insurance || aiValue(raw, ["seguradora", "assistência", "assistencia"]);
     if (/despesa|combust[ií]vel|ped[aá]gio|manuten[cç][aã]o|nota|recibo|oficina|estacionamento|lavagem/.test(lower)) {
       drafts.push({
         kind: "expense",
         title: "Rascunho de despesa",
         rawText: raw,
         data: {
-          description: aiField(raw, ["descricao", "descrição", "item"]) || "Despesa lançada por IA",
-          category: aiField(raw, ["categoria", "tipo"]) || "Despesa operacional",
+          description: aiValue(raw, ["descrição", "descricao", "item"]) || "Despesa lançada por IA",
+          category: aiValue(raw, ["categoria", "tipo"]) || "Despesa operacional",
           amount,
           plate,
           status: "Pendente"
@@ -3310,9 +3604,9 @@ Rota: ${url}`;
         rawText: raw,
         data: {
           type: /pagar|despesa|sa[ií]da/.test(lower) ? "saida" : "entrada",
-          description: aiField(raw, ["descricao", "descrição", "historico", "histórico"]) || "Lançamento criado por IA",
-          category: aiField(raw, ["categoria", "tipo"]) || "Operacional",
-          billingParty: insurance || client || aiField(raw, ["pagador", "recebedor"]),
+          description: aiValue(raw, ["descrição", "descricao", "histórico", "historico"]) || "Lançamento criado por IA",
+          category: aiValue(raw, ["categoria", "tipo"]) || "Operacional",
+          billingParty: insurance || client || aiValue(raw, ["pagador", "recebedor"]),
           status: /recebido|pago|quitado/.test(lower) ? "Recebido" : "A receber",
           amount
         }
@@ -3340,6 +3634,15 @@ Rota: ${url}`;
     return `<div class="${wide ? "wide" : ""}"><label>${esc(label)}</label><input id="${esc(id)}" value="${esc(value || "")}"></div>`;
   }
 
+  function aiTextarea(id, label, value, wide) {
+    return `<div class="${wide ? "wide" : ""}"><label>${esc(label)}</label><textarea id="${esc(id)}">${esc(value || "")}</textarea></div>`;
+  }
+
+  function aiReviewValue(index, key) {
+    const el = $(`ai_${index}_${key}`);
+    return el ? el.value.trim() : "";
+  }
+
   function renderAiReview() {
     const box = $("aiReviewBox");
     if (!box) return;
@@ -3352,15 +3655,28 @@ Rota: ${url}`;
       const d = draft.data || {};
       let fields = "";
       if (draft.kind === "call") {
+        const tariffSummary = (d.tariffs || []).map((row) => row.raw || row.description).filter(Boolean).join("\n");
+        const questionSummary = (d.questions || []).map((q) => `${q.question} ${q.answer || ""}`.trim()).join("\n");
         fields = [
-          aiInput(`ai_${index}_client`, "Cliente", d.client),
+          aiInput(`ai_${index}_client`, "Beneficiário / cliente final", d.client),
           aiInput(`ai_${index}_phone`, "WhatsApp", d.phone),
-          aiInput(`ai_${index}_insurance`, "Seguradora", d.insurance),
-          aiInput(`ai_${index}_protocol`, "Protocolo", d.protocol),
+          aiInput(`ai_${index}_insurance`, "Assistência / seguradora", d.insurance),
+          aiInput(`ai_${index}_billingClient`, "Cliente / associado / pagador", d.billingClient),
+          aiInput(`ai_${index}_requester`, "Solicitante", d.requester),
+          aiInput(`ai_${index}_protocol`, "Protocolo / ordem de serviço", d.protocol),
+          aiInput(`ai_${index}_serviceType`, "Tipo de serviço", d.serviceType),
           aiInput(`ai_${index}_plate`, "Placa", d.plate),
+          aiInput(`ai_${index}_vehicle`, "Veículo", d.vehicle, true),
+          aiInput(`ai_${index}_color`, "Cor", d.color),
+          aiInput(`ai_${index}_year`, "Ano", d.year),
           aiInput(`ai_${index}_amount`, "Valor", d.amount ? String(d.amount).replace(".", ",") : ""),
+          aiInput(`ai_${index}_totalRouteKm`, "Percurso total KM", d.totalRouteKm ? String(d.totalRouteKm).replace(".", ",") : ""),
+          aiInput(`ai_${index}_baseDistanceKm`, "Distância base / viatura KM", d.baseDistanceKm ? String(d.baseDistanceKm).replace(".", ",") : ""),
           aiInput(`ai_${index}_origin`, "Origem", d.origin, true),
-          aiInput(`ai_${index}_destination`, "Destino", d.destination, true)
+          aiInput(`ai_${index}_destination`, "Destino", d.destination, true),
+          aiTextarea(`ai_${index}_notes`, "Observações oficiais do acionamento", d.notes, true),
+          aiTextarea(`ai_${index}_questions`, "Perguntas da seguradora", questionSummary, true),
+          aiTextarea(`ai_${index}_tariffs`, "Tarifas / composição de valor", tariffSummary, true)
         ].join("");
       } else if (draft.kind === "finance" || draft.kind === "expense") {
         fields = [
@@ -3393,16 +3709,26 @@ Rota: ${url}`;
     if (!draft) return;
     if (draft.kind === "call") {
       showView("chamados");
-      setValue("callClient", $(`ai_${index}_client`).value);
-      setValue("callPhone", $(`ai_${index}_phone`).value);
+      setValue("callClient", aiReviewValue(index, "client"));
+      setValue("callPhone", aiReviewValue(index, "phone"));
       setValue("callSource", "Seguradora");
-      setValue("callInsurance", $(`ai_${index}_insurance`).value);
-      setValue("callInsuranceProtocol", $(`ai_${index}_protocol`).value);
-      setValue("callCustomerPlate", $(`ai_${index}_plate`).value);
-      setValue("callPrice", $(`ai_${index}_amount`).value);
-      setValue("callOriginLabel", $(`ai_${index}_origin`).value);
-      setValue("callDestLabel", $(`ai_${index}_destination`).value);
-      toast("Rascunho aplicado no formulário. Valide a rota antes de registrar.", "ok");
+      setValue("callType", aiReviewValue(index, "serviceType") || "Seguradora");
+      setValue("callInsurance", aiReviewValue(index, "insurance"));
+      setValue("callInsuranceProtocol", aiReviewValue(index, "protocol"));
+      setValue("callPolicy", aiReviewValue(index, "protocol"));
+      setValue("callCustomerPlate", aiReviewValue(index, "plate"));
+      setValue("callCustomerVehicle", [aiReviewValue(index, "vehicle"), aiReviewValue(index, "color"), aiReviewValue(index, "year")].filter(Boolean).join(" / "));
+      setValue("callPrice", aiReviewValue(index, "amount"));
+      setValue("callOriginLabel", aiReviewValue(index, "origin"));
+      setValue("callDestLabel", aiReviewValue(index, "destination"));
+      setValue("callNotes", [aiReviewValue(index, "notes"), aiReviewValue(index, "questions"), aiReviewValue(index, "tariffs")].filter(Boolean).join("\n\n"));
+      const totalRouteKm = parseMoney(aiReviewValue(index, "totalRouteKm"));
+      if (totalRouteKm && $("callTowKm")) {
+        setValue("callTowKm", String(totalRouteKm).replace(".", ","));
+        if ($("callTowActive")) $("callTowActive").checked = true;
+        calculateTowPricing();
+      }
+      toast("Chamado de seguradora aplicado no formulário. Confira rota, frota e valor antes de registrar.", "ok");
       return;
     }
     showView("financeiro");
@@ -3420,30 +3746,69 @@ Rota: ${url}`;
     const now = new Date().toISOString();
     if (draft.kind === "call") {
       if (!canOperateCalls()) return toast("Sem permissão para salvar chamado.", "danger");
+      const original = draft.data || {};
+      const reviewed = {
+        insurance: aiReviewValue(index, "insurance"),
+        billingClient: aiReviewValue(index, "billingClient"),
+        requester: aiReviewValue(index, "requester"),
+        protocol: aiReviewValue(index, "protocol"),
+        serviceType: aiReviewValue(index, "serviceType"),
+        customerName: aiReviewValue(index, "client"),
+        customerPhone: aiReviewValue(index, "phone"),
+        customerPlate: plateKey(aiReviewValue(index, "plate")),
+        customerVehicle: aiReviewValue(index, "vehicle"),
+        vehicleColor: aiReviewValue(index, "color"),
+        vehicleYear: aiReviewValue(index, "year"),
+        originText: aiReviewValue(index, "origin"),
+        destinationText: aiReviewValue(index, "destination"),
+        amount: parseMoney(aiReviewValue(index, "amount")),
+        totalRouteKm: parseMoney(aiReviewValue(index, "totalRouteKm")),
+        baseDistanceKm: parseMoney(aiReviewValue(index, "baseDistanceKm")),
+        notes: aiReviewValue(index, "notes"),
+        questionSummary: aiReviewValue(index, "questions"),
+        tariffSummary: aiReviewValue(index, "tariffs")
+      };
       const payload = {
-        source: $(`ai_${index}_insurance`).value.trim() || "Assistente IA",
-        sourceName: $(`ai_${index}_insurance`).value.trim() || "Assistente IA",
-        sourceType: "ai_assistant",
-        protocol: $(`ai_${index}_protocol`).value.trim(),
-        customerName: $(`ai_${index}_client`).value.trim(),
-        customerPhone: $(`ai_${index}_phone`).value.trim(),
-        customerPlate: plateKey($(`ai_${index}_plate`).value),
-        originText: $(`ai_${index}_origin`).value.trim(),
-        destinationText: $(`ai_${index}_destination`).value.trim(),
+        source: reviewed.insurance || "Assistente IA",
+        sourceName: reviewed.insurance || "Assistente IA",
+        sourceType: "ai_insurance_parser",
+        protocol: reviewed.protocol,
+        externalId: reviewed.protocol,
+        customerName: reviewed.customerName,
+        customerPhone: reviewed.customerPhone,
+        customerPlate: reviewed.customerPlate,
+        originText: reviewed.originText,
+        destinationText: reviewed.destinationText,
         status: "novo",
         normalizedCall: {
           source: "Seguradora",
-          insurance: $(`ai_${index}_insurance`).value.trim(),
-          insuranceProtocol: $(`ai_${index}_protocol`).value.trim(),
-          customerName: $(`ai_${index}_client`).value.trim(),
-          customerPhone: $(`ai_${index}_phone`).value.trim(),
-          customerPlate: plateKey($(`ai_${index}_plate`).value),
-          originText: $(`ai_${index}_origin`).value.trim(),
-          destinationText: $(`ai_${index}_destination`).value.trim(),
-          amount: parseMoney($(`ai_${index}_amount`).value),
-          rawText: draft.rawText || ""
+          insurance: reviewed.insurance,
+          billingClient: reviewed.billingClient,
+          requester: reviewed.requester,
+          insuranceProtocol: reviewed.protocol,
+          serviceType: reviewed.serviceType,
+          customerName: reviewed.customerName,
+          customerPhone: reviewed.customerPhone,
+          customerPlate: reviewed.customerPlate,
+          customerVehicle: reviewed.customerVehicle,
+          vehicleColor: reviewed.vehicleColor,
+          vehicleYear: reviewed.vehicleYear,
+          originText: reviewed.originText,
+          destinationText: reviewed.destinationText,
+          amount: reviewed.amount,
+          totalRouteKm: reviewed.totalRouteKm,
+          baseDistanceKm: reviewed.baseDistanceKm,
+          notes: reviewed.notes,
+          questions: original.questions || [],
+          tariffs: original.tariffs || [],
+          questionSummary: reviewed.questionSummary,
+          tariffSummary: reviewed.tariffSummary,
+          mapLinks: original.mapLinks || [],
+          rawText: draft.rawText || "",
+          parserVersion: "jm-v28-ia-seguradoras-checklist"
         },
         rawPayload: draft.rawText || "",
+        payload: Object.assign({}, original, reviewed),
         createdAt: now,
         createdBy: state.user.uid,
         updatedAt: now,
@@ -4119,6 +4484,7 @@ Rota: ${url}`;
     applySmartVehicle,
     applyAiDraft,
     saveAiDraft,
+    buildAiDraftsFromText: buildAiDrafts,
     calculateSmartRoute,
     readSharedRouteLink,
     syncTrackerNow,

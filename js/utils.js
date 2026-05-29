@@ -328,6 +328,46 @@
     return "muted";
   }
 
+  function applyTheme(theme) {
+    const next = theme === "light" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    document.documentElement.style.colorScheme = next;
+    let meta = document.querySelector('meta[name="theme-color"]');
+    if (!meta) {
+      meta = document.createElement("meta");
+      meta.name = "theme-color";
+      document.head.appendChild(meta);
+    }
+    meta.content = next === "light" ? "#f4f7fb" : "#07110f";
+    try { localStorage.setItem("jm-theme", next); } catch (_) {}
+    return next;
+  }
+
+  function currentTheme() {
+    try {
+      const saved = localStorage.getItem("jm-theme");
+      if (saved === "light" || saved === "dark") return saved;
+    } catch (_) {}
+    return "dark";
+  }
+
+  function setupThemeToggle() {
+    const theme = applyTheme(currentTheme());
+    if (document.querySelector(".theme-toggle")) return;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "btn theme-toggle";
+    button.setAttribute("aria-label", "Alternar modo claro e escuro");
+    function render(next) {
+      button.textContent = next === "light" ? "Modo escuro" : "Modo claro";
+      button.title = button.textContent;
+    }
+    render(theme);
+    button.addEventListener("click", () => render(applyTheme(document.documentElement.getAttribute("data-theme") === "light" ? "dark" : "light")));
+    document.addEventListener("DOMContentLoaded", () => document.body.appendChild(button), { once: true });
+    if (document.body) document.body.appendChild(button);
+  }
+
   function setupCollapsiblePanels(root, options) {
     const scope = typeof root === "string" ? document.querySelector(root) : root || document;
     if (!scope) return;
@@ -444,6 +484,7 @@
     STATUS_DEFS, statusKey, statusLabel, isFinalStatus,
     uidSafe, coords, pointFrom, isPoint, roundPoint, haversineKm, callRoutePoints,
     routeKm, geometryToFirestore, geometryToGeoJson, geoJsonToLatLngs, geometryKm, mapsRouteUrl, normalizeUrl, toast, statusClass,
-    setupCollapsiblePanels
+    applyTheme, currentTheme, setupThemeToggle, setupCollapsiblePanels
   };
+  setupThemeToggle();
 }());

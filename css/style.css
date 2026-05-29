@@ -13,6 +13,19 @@
   --radius: 8px;
 }
 
+html[data-theme="light"] {
+  --bg: #f4f7fb;
+  --panel: #ffffff;
+  --panel-2: #eef4f8;
+  --line: #cbd8e3;
+  --text: #0f172a;
+  --muted: #526173;
+  --accent: #087c89;
+  --green: #15803d;
+  --amber: #b45309;
+  --red: #dc2626;
+}
+
 * { box-sizing: border-box; }
 body {
   margin: 0;
@@ -21,6 +34,43 @@ body {
   background: var(--bg);
   color: var(--text);
   padding-bottom: 28px;
+}
+
+html[data-theme="light"] body { background: var(--bg); color: var(--text); }
+html[data-theme="light"] .login {
+  background:
+    linear-gradient(rgba(244, 247, 251, .92), rgba(244, 247, 251, .98)),
+    radial-gradient(circle at 18% 8%, rgba(8, 124, 137, .16), transparent 28%),
+    repeating-linear-gradient(90deg, rgba(8, 124, 137, .08) 0 1px, transparent 1px 96px),
+    repeating-linear-gradient(0deg, rgba(180, 83, 9, .06) 0 1px, transparent 1px 96px);
+}
+html[data-theme="light"] .sidebar { background: linear-gradient(145deg, #ffffff, #e9f2f6); }
+html[data-theme="light"] .panel,
+html[data-theme="light"] .login-card,
+html[data-theme="light"] .ops-card,
+html[data-theme="light"] .dossier-row,
+html[data-theme="light"] .proof-summary,
+html[data-theme="light"] .proof-stage-evidence,
+html[data-theme="light"] .damage-diagram { background: var(--panel); }
+html[data-theme="light"] input,
+html[data-theme="light"] select,
+html[data-theme="light"] textarea { background: #ffffff; color: var(--text); border-color: #bed0df; }
+html[data-theme="light"] .btn { background: #eef4f8; color: var(--text); border-color: #bed0df; }
+html[data-theme="light"] .btn.primary { background: #087c89; color: #ffffff; border-color: #0e95a4; }
+html[data-theme="light"] .btn.good { background: #15803d; color: #ffffff; border-color: #16a34a; }
+html[data-theme="light"] .btn.danger { background: #b91c1c; color: #ffffff; border-color: #dc2626; }
+
+.theme-toggle {
+  position: fixed;
+  right: 14px;
+  bottom: 38px;
+  z-index: 9000;
+  min-height: 44px;
+  border-radius: 999px;
+  box-shadow: 0 14px 36px rgba(0,0,0,.24);
+}
+@media print {
+  .theme-toggle { display: none !important; }
 }
 
 button, input, select, textarea { font: inherit; }
@@ -1099,6 +1149,46 @@ td { font-size: .88rem; }
   text-transform: uppercase;
   padding-top: 8px;
 }
+.proof-section {
+  border: 1px solid rgba(45, 212, 191, .18);
+  border-radius: var(--radius);
+  padding: 10px;
+  background: rgba(255,255,255,.025);
+}
+.proof-section summary {
+  cursor: pointer;
+  font-weight: 900;
+  color: var(--accent);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+}
+.proof-section[open] summary { margin-bottom: 10px; }
+.proof-inspection-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.proof-accessories-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.proof-accessory-group {
+  border: 1px solid rgba(148, 163, 184, .16);
+  border-radius: var(--radius);
+  padding: 10px;
+  background: rgba(255,255,255,.025);
+}
+.proof-accessory-group h3 { margin-bottom: 8px; }
+.proof-accessory-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 76px;
+  gap: 8px;
+  align-items: center;
+  padding: 5px 0;
+  border-top: 1px solid rgba(148, 163, 184, .10);
+}
+.proof-accessory-row span { min-width: 0; font-size: .78rem; }
+.proof-accessory-row select { min-height: 34px; padding: 6px; }
 .damage-diagram {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1138,6 +1228,8 @@ td { font-size: .88rem; }
   .ops-list { max-height: none; }
   .ops-map-panel > .actions { align-items: stretch !important; }
   .ops-map-panel > .actions > .actions .btn { width: 100%; justify-content: center; }
+  .proof-inspection-grid, .proof-accessories-grid { grid-template-columns: 1fr; }
+  .theme-toggle { bottom: 18px; right: 12px; min-height: 42px; padding-inline: 12px; }
   .dash-kpi-grid, .dossier-grid { grid-template-columns: 1fr; }
   .dossier-head { flex-direction: column; }
   .finance-toolbar, .proof-phase-grid, .damage-diagram { grid-template-columns: 1fr; }

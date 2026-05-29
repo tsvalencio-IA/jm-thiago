@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#07111f">
   <title>JM Guinchos - Gestor</title>
-  <link rel="manifest" href="manifest.json?v=jm-v27-mapa-ia-fechamento">
+  <link rel="manifest" href="manifest.json?v=jm-v28-ia-seguradoras-checklist-tema">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="css/style.css?v=jm-v27-mapa-ia-fechamento">
+  <link rel="stylesheet" href="css/style.css?v=jm-v28-ia-seguradoras-checklist-tema">
 </head>
 <body>
   <section id="loginView" class="login">
@@ -395,12 +395,12 @@
           <div class="grid">
             <div class="panel col-5 ai-panel">
               <h2>Assistente IA</h2>
-              <p class="muted small">Cole texto ou envie um print para montar rascunhos de chamado, lançamento financeiro ou despesa. Revise antes de salvar.</p>
+              <p class="muted small">Cole textos de portais como Maxpar, Amparo, Veniti ou seguradoras. A IA monta um chamado oficial com protocolo, beneficiário, veículo, origem, destino, perguntas, tarifas e valor. Revise antes de salvar.</p>
               <div class="ai-upload-box">
                 <input id="aiSourceFile" type="file" accept="image/*,.pdf">
                 <div id="aiFilePreview" class="ai-file-preview muted small">Nenhum arquivo selecionado.</div>
               </div>
-              <textarea id="aiSourceText" class="ai-textarea" placeholder="Cole aqui print transcrito, conversa, acionamento, nota, despesa ou cobrança."></textarea>
+              <textarea id="aiSourceText" class="ai-textarea" placeholder="Cole aqui o acionamento completo da seguradora, inclusive perguntas, origem, destino, tarifas, links e observações."></textarea>
               <div class="actions">
                 <button class="btn" id="btnAiExtract" type="button">Ler print</button>
                 <button class="btn primary" id="btnAiAnalyze" type="button">Gerar rascunhos</button>
@@ -613,16 +613,16 @@
   <footer class="signature-footer" aria-hidden="true"></footer>
   <div id="toast" class="toast"></div>
 
-  <script src="js/config.firebase.js?v=jm-v27-mapa-ia-fechamento"></script>
+  <script src="js/config.firebase.js?v=jm-v28-ia-seguradoras-checklist-tema"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
-  <script src="js/utils.js?v=jm-v27-mapa-ia-fechamento"></script>
-  <script src="js/firebase.js?v=jm-v27-mapa-ia-fechamento"></script>
-  <script src="js/tracker.js?v=jm-v27-mapa-ia-fechamento"></script>
-  <script src="js/google-maps.js?v=jm-v27-mapa-ia-fechamento"></script>
-  <script src="js/mapa.js?v=jm-v27-mapa-ia-fechamento"></script>
-  <script src="js/app.js?v=jm-v27-mapa-ia-fechamento"></script>
+  <script src="js/utils.js?v=jm-v28-ia-seguradoras-checklist-tema"></script>
+  <script src="js/firebase.js?v=jm-v28-ia-seguradoras-checklist-tema"></script>
+  <script src="js/tracker.js?v=jm-v28-ia-seguradoras-checklist-tema"></script>
+  <script src="js/google-maps.js?v=jm-v28-ia-seguradoras-checklist-tema"></script>
+  <script src="js/mapa.js?v=jm-v28-ia-seguradoras-checklist-tema"></script>
+  <script src="js/app.js?v=jm-v28-ia-seguradoras-checklist-tema"></script>
 </body>
 </html>

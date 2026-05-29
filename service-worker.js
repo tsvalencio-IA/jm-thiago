@@ -1,4 +1,4 @@
-const CACHE_NAME = "jm-v27-mapa-ia-fechamento";
+const CACHE_NAME = "jm-v28-ia-seguradoras-checklist-tema";
 const ASSETS = [
   "./",
   "./index.html",
