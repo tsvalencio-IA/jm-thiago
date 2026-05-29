@@ -738,12 +738,70 @@
 
   function damageVehicleSvg(type) {
     if (String(type || "") === "moto") {
-      return `<svg viewBox="0 0 420 190" role="img" aria-label="Desenho de moto"><path d="M92 139h72l54-54h67l39 54" fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/><circle cx="92" cy="139" r="32" fill="none" stroke="currentColor" stroke-width="12"/><circle cx="326" cy="139" r="32" fill="none" stroke="currentColor" stroke-width="12"/><path d="M210 86l-28-36h45l14 36m47-2l42-34" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round"/></svg>`;
+      return `<svg viewBox="0 0 640 300" role="img" aria-label="Desenho 3D de moto para checklist de avarias">
+        <defs>
+          <linearGradient id="motoBody" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#38bdf8"/><stop offset="48%" stop-color="#0f766e"/><stop offset="100%" stop-color="#0f172a"/></linearGradient>
+          <radialGradient id="motoWheel" cx="50%" cy="50%" r="55%"><stop offset="0%" stop-color="#94a3b8"/><stop offset="42%" stop-color="#1f2937"/><stop offset="100%" stop-color="#030712"/></radialGradient>
+          <filter id="motoShadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="14" stdDeviation="10" flood-color="#000" flood-opacity=".42"/></filter>
+        </defs>
+        <ellipse cx="326" cy="248" rx="245" ry="24" fill="#000" opacity=".28"/>
+        <g filter="url(#motoShadow)">
+          <circle cx="145" cy="212" r="54" fill="url(#motoWheel)" stroke="#dbeafe" stroke-width="9"/><circle cx="145" cy="212" r="22" fill="#0f172a" stroke="#38bdf8" stroke-width="5"/>
+          <circle cx="492" cy="212" r="54" fill="url(#motoWheel)" stroke="#dbeafe" stroke-width="9"/><circle cx="492" cy="212" r="22" fill="#0f172a" stroke="#38bdf8" stroke-width="5"/>
+          <path d="M175 200h99l78-80h96l57 80" fill="none" stroke="#e2e8f0" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M276 193l-48-84h82l32 72m96-62l72-58" fill="none" stroke="#bae6fd" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M306 112c40-30 111-28 149 3l-39 44H278z" fill="url(#motoBody)" stroke="#e0f2fe" stroke-width="8" stroke-linejoin="round"/>
+          <path d="M400 87h60l26 23h-80z" fill="#0f172a" stroke="#bae6fd" stroke-width="6"/>
+          <path d="M500 61h48" stroke="#e2e8f0" stroke-width="10" stroke-linecap="round"/>
+        </g>
+      </svg>`;
     }
     if (String(type || "") === "caminhao") {
-      return `<svg viewBox="0 0 520 220" role="img" aria-label="Desenho de caminhão"><rect x="42" y="82" width="270" height="78" rx="10" fill="none" stroke="currentColor" stroke-width="10"/><path d="M312 100h86l50 36v24H312z" fill="none" stroke="currentColor" stroke-width="10" stroke-linejoin="round"/><path d="M338 110h45l25 26h-70z" fill="none" stroke="currentColor" stroke-width="7"/><circle cx="124" cy="172" r="25" fill="none" stroke="currentColor" stroke-width="10"/><circle cx="276" cy="172" r="25" fill="none" stroke="currentColor" stroke-width="10"/><circle cx="398" cy="172" r="25" fill="none" stroke="currentColor" stroke-width="10"/></svg>`;
+      return `<svg viewBox="0 0 720 320" role="img" aria-label="Desenho 3D de caminhão para checklist de avarias">
+        <defs>
+          <linearGradient id="truckSide" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#67e8f9"/><stop offset="45%" stop-color="#0e7490"/><stop offset="100%" stop-color="#164e63"/></linearGradient>
+          <linearGradient id="truckTop" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#cffafe"/><stop offset="100%" stop-color="#0891b2"/></linearGradient>
+          <linearGradient id="truckCab" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#f8fafc"/><stop offset="48%" stop-color="#38bdf8"/><stop offset="100%" stop-color="#0369a1"/></linearGradient>
+          <radialGradient id="truckWheel" cx="50%" cy="50%" r="55%"><stop offset="0%" stop-color="#cbd5e1"/><stop offset="45%" stop-color="#1e293b"/><stop offset="100%" stop-color="#020617"/></radialGradient>
+          <filter id="truckShadow" x="-20%" y="-20%" width="145%" height="155%"><feDropShadow dx="0" dy="18" stdDeviation="12" flood-color="#000" flood-opacity=".42"/></filter>
+        </defs>
+        <ellipse cx="365" cy="268" rx="300" ry="28" fill="#000" opacity=".30"/>
+        <g filter="url(#truckShadow)">
+          <polygon points="80,118 376,118 428,82 134,82" fill="url(#truckTop)" stroke="#ecfeff" stroke-width="6" stroke-linejoin="round"/>
+          <polygon points="80,118 376,118 376,212 80,212" fill="url(#truckSide)" stroke="#e0f2fe" stroke-width="7" stroke-linejoin="round"/>
+          <polygon points="376,118 428,82 428,176 376,212" fill="#0e7490" stroke="#bae6fd" stroke-width="6" stroke-linejoin="round"/>
+          <polygon points="428,112 548,112 632,168 632,212 428,212" fill="url(#truckCab)" stroke="#e0f2fe" stroke-width="7" stroke-linejoin="round"/>
+          <polygon points="464,128 534,128 584,165 464,165" fill="#0f172a" opacity=".82" stroke="#bae6fd" stroke-width="5" stroke-linejoin="round"/>
+          <path d="M88 139h278M88 169h278M111 92h287" stroke="#ecfeff" stroke-width="4" opacity=".52" stroke-linecap="round"/>
+          <rect x="436" y="178" width="46" height="24" rx="5" fill="#164e63" stroke="#bae6fd" stroke-width="4"/>
+          <circle cx="166" cy="222" r="42" fill="url(#truckWheel)" stroke="#e5e7eb" stroke-width="9"/><circle cx="166" cy="222" r="17" fill="#0f172a" stroke="#38bdf8" stroke-width="5"/>
+          <circle cx="342" cy="222" r="42" fill="url(#truckWheel)" stroke="#e5e7eb" stroke-width="9"/><circle cx="342" cy="222" r="17" fill="#0f172a" stroke="#38bdf8" stroke-width="5"/>
+          <circle cx="552" cy="222" r="42" fill="url(#truckWheel)" stroke="#e5e7eb" stroke-width="9"/><circle cx="552" cy="222" r="17" fill="#0f172a" stroke="#38bdf8" stroke-width="5"/>
+          <path d="M630 190h32" stroke="#fef08a" stroke-width="8" stroke-linecap="round"/>
+        </g>
+      </svg>`;
     }
-    return `<svg viewBox="0 0 480 220" role="img" aria-label="Desenho de automóvel"><path d="M82 145h316l-18-54c-6-17-20-29-38-29H180c-18 0-34 10-43 26l-28 57z" fill="none" stroke="currentColor" stroke-width="10" stroke-linejoin="round"/><path d="M170 96h61V72h-40c-11 0-18 6-21 16zm80 0h93l-10-18c-3-5-10-6-17-6h-66z" fill="none" stroke="currentColor" stroke-width="7"/><circle cx="146" cy="155" r="27" fill="none" stroke="currentColor" stroke-width="10"/><circle cx="346" cy="155" r="27" fill="none" stroke="currentColor" stroke-width="10"/></svg>`;
+    return `<svg viewBox="0 0 680 310" role="img" aria-label="Desenho 3D de automóvel para checklist de avarias">
+      <defs>
+        <linearGradient id="carSide" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#60a5fa"/><stop offset="50%" stop-color="#2563eb"/><stop offset="100%" stop-color="#1e3a8a"/></linearGradient>
+        <linearGradient id="carTop" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#dbeafe"/><stop offset="100%" stop-color="#38bdf8"/></linearGradient>
+        <linearGradient id="glass" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#e0f2fe"/><stop offset="100%" stop-color="#0f172a"/></linearGradient>
+        <radialGradient id="carWheel" cx="50%" cy="50%" r="55%"><stop offset="0%" stop-color="#cbd5e1"/><stop offset="44%" stop-color="#1f2937"/><stop offset="100%" stop-color="#020617"/></radialGradient>
+        <filter id="carShadow" x="-20%" y="-20%" width="145%" height="155%"><feDropShadow dx="0" dy="16" stdDeviation="12" flood-color="#000" flood-opacity=".42"/></filter>
+      </defs>
+      <ellipse cx="344" cy="252" rx="260" ry="26" fill="#000" opacity=".30"/>
+      <g filter="url(#carShadow)">
+        <polygon points="130,149 220,83 454,83 544,149 500,178 166,178" fill="url(#carTop)" stroke="#eff6ff" stroke-width="7" stroke-linejoin="round"/>
+        <path d="M94 169c16-47 68-70 120-74h214c64 0 119 35 151 74l18 47c-31 15-78 23-136 23H194c-62 0-109-8-128-23z" fill="url(#carSide)" stroke="#dbeafe" stroke-width="8" stroke-linejoin="round"/>
+        <polygon points="230,98 321,98 308,145 170,145" fill="url(#glass)" opacity=".90" stroke="#bfdbfe" stroke-width="5"/>
+        <polygon points="337,98 440,98 508,145 324,145" fill="url(#glass)" opacity=".90" stroke="#bfdbfe" stroke-width="5"/>
+        <path d="M116 177h452M170 150h346M446 99l38 48" stroke="#bfdbfe" stroke-width="4" opacity=".58" stroke-linecap="round"/>
+        <rect x="118" y="193" width="45" height="18" rx="7" fill="#fef08a" opacity=".90"/>
+        <rect x="540" y="193" width="38" height="18" rx="7" fill="#fecaca" opacity=".90"/>
+        <circle cx="202" cy="226" r="43" fill="url(#carWheel)" stroke="#f8fafc" stroke-width="9"/><circle cx="202" cy="226" r="17" fill="#0f172a" stroke="#38bdf8" stroke-width="5"/>
+        <circle cx="486" cy="226" r="43" fill="url(#carWheel)" stroke="#f8fafc" stroke-width="9"/><circle cx="486" cy="226" r="17" fill="#0f172a" stroke="#38bdf8" stroke-width="5"/>
+      </g>
+    </svg>`;
   }
 
   function renderDamageEditor() {
